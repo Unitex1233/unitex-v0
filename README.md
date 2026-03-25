@@ -23,7 +23,8 @@ A minimalist social learning platform built with Swiss design principles.
 ### Prerequisites
 - Node.js 18+
 - Docker & Docker Compose
-
+- Gmail account with App Password (for OTP)
+- 
 ### Quick Start
 
 ```bash
