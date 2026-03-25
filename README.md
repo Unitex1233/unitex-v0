@@ -23,7 +23,6 @@ A minimalist social learning platform built with Swiss design principles.
 ### Prerequisites
 - Node.js 18+
 - Docker & Docker Compose
-- Gmail account with App Password (for OTP)
 
 ### Quick Start
 
@@ -40,6 +39,17 @@ npm run dev
 ### Access
 - **Frontend**: http://localhost:3000
 - **API**: http://localhost:5000/api/health
+
+## Environment Variables
+
+Copy `.env.example` to `.env` and configure:
+```
+DOCKER_USERNAME=your_docker_username
+DOCKER_PASSWORD=your_docker_password
+VITE_API_URL=http://localhost:5000
+DATABASE_URL=postgres://user:password@localhost:5432/unitex
+PORT=5000
+```
 
 ## Design System
 
@@ -59,13 +69,11 @@ npm run dev
 | Orange | `#F4511C` | Accent |
 | Coral | `#FF7F50` | Secondary |
 
-## Environment Variables
+## CI/CD
 
-Copy `.env.example` to `.env` and configure:
-```
-SMTP_USER=your-gmail@gmail.com
-SMTP_PASS=your-app-password
-```
+This project uses GitHub Actions to automatically build and push Docker images on every push to `main`. See `.github/workflows/docker-publish.yml`.
+
+> Add `DOCKER_USERNAME` and `DOCKER_PASSWORD` to your GitHub repository Secrets.
 
 ## License
 
