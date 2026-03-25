@@ -275,7 +275,7 @@ function Home() {
     ];
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-[2.5fr_8.5fr_2.5fr] gap-6w-full max-w-full px-0.5 lg:px-0.5 pt-1 pb-8 mx-auto">
+               <div className="grid grid-cols-1 lg:grid-cols-[2.5fr_8.5fr_2.5fr] gap-6 w-full max-w-full px-0.5 lg:px-0.5 pt-1 pb-8 mx-auto">
             {/* Right Sidebar - Profile & Stats + Connections (2.5/12 approx) */}
             <aside className="hidden lg:flex flex-col gap-6 sticky top-2 h-[calc(100vh-2rem)] overflow-y-auto pr-2 no-scrollbar pb-10">
                 <UnifiedProfileCard />
