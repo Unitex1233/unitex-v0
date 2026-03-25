@@ -275,45 +275,9 @@ function Home() {
     ];
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_2.5fr] lg:grid-cols-[2.75fr_8fr_2.75fr] gap-6 w-full max-w-full px-4 lg:px-8 pt-4 pb-8 mx-auto smooth-scroll">
-            {/* Mobile-Only Header Section (Search & Carousel) */}
-            <div className="flex flex-col gap-6 lg:hidden order-1">
-                <div className="relative group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                    <input 
-                        type="text" 
-                        placeholder="Search the network..." 
-                        className="w-full bg-white border border-[var(--color-surface)] py-3 pl-12 pr-4 text-sm font-bold focus:outline-none focus:border-[var(--color-accent)] transition-colors rounded-none"
-                    />
-                </div>
-                
-                {/* News & Updates Carousel (Mobile Only) */}
-                <div className="bg-white border border-[var(--color-surface)] p-4 flex flex-col gap-3 shadow-sm">
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400">Latest Syncs</h3>
-                        <Zap size={14} className="text-[var(--color-accent)]" />
-                    </div>
-                    <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2 snap-x">
-                        {[
-                            { title: "Silicon Valley Nodes", tag: "Sync" },
-                            { title: "Bot Mitigation Live", tag: "Security" },
-                            { title: "Quantum Keys Sync", tag: "Protocol" },
-                            { title: "Mesh Hackathon Q4", tag: "Event" }
-                        ].map((item, i) => (
-                            <div key={i} className="min-w-[240px] bg-gray-50 p-4 border border-gray-100 snap-start">
-                                <span className="text-[9px] font-bold text-[var(--color-accent)] uppercase tracking-widest">{item.tag}</span>
-                                <h4 className="text-sm font-bold mt-1 uppercase tracking-tight">{item.title}</h4>
-                                <button className="mt-3 text-[10px] font-bold text-gray-400 hover:text-[var(--color-accent)] transition-colors flex items-center gap-1">
-                                    VIEW LOGS <ArrowRight size={10} />
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-            {/* Right Sidebar - Profile & Stats + Connections (Desktop/Tablet) */}
-            <aside className="hidden md:flex flex-col gap-6 sticky top-4 h-[calc(100vh-2rem)] overflow-y-auto pr-2 no-scrollbar pb-10 order-2 lg:order-1">
+        <div className="grid grid-cols-1 lg:grid-cols-[2.5fr_8.5fr_2.5fr] gap-6w-full max-w-full px-0.5 lg:px-0.5 pt-1 pb-8 mx-auto">
+            {/* Right Sidebar - Profile & Stats + Connections (2.5/12 approx) */}
+            <aside className="hidden lg:flex flex-col gap-6 sticky top-2 h-[calc(100vh-2rem)] overflow-y-auto pr-2 no-scrollbar pb-10">
                 <UnifiedProfileCard />
 
                 {/* Recommended Connections */}
@@ -326,13 +290,12 @@ function Home() {
                         {[
                             { id: 'alex-thorne', name: "Alex Thorne", role: "Startup Founder", avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=400&auto=format&fit=crop" },
                             { id: 'priya-patel', name: "Priya Patel", role: "Full Stack Dev", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=400&auto=format&fit=crop" },
-                            { id: 'liam-oconnor', name: "Liam O'Connor", role: "Game DevOps", avatar: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=400&auto=format&fit=crop" },
-                            { id: 'sarah-jenkins', name: "Sarah Jenkins", role: "Cloud Arc", avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=400&auto=format&fit=crop" }
+                            { id: 'liam-oconnor', name: "Liam O'Connor", role: "Game DevOps", avatar: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?q=80&w=400&auto=format&fit=crop" }
                         ].map((person, i) => (
                             <NavLink key={i} to={`/profile/${person.id}`} className="flex items-center justify-between group cursor-pointer">
                                 <div className="flex items-center gap-2.5">
                                     <Avatar className="h-8 w-8 rounded-none border border-gray-100 shrink-0">
-                                        <AvatarImage src={person.avatar} loading="lazy" />
+                                        <AvatarImage src={person.avatar} />
                                         <AvatarFallback className="text-[10px] font-bold bg-black text-white rounded-none">{person.name[0]}</AvatarFallback>
                                     </Avatar>
                                     <div>
@@ -349,7 +312,7 @@ function Home() {
             </aside>
 
             {/* Main Feed - Center Column (8/13 approx) */}
-            <main className="flex flex-col gap-6 order-3 lg:order-2">
+            <main className="flex flex-col gap-6">
                 {/* Feed Controls - Non-sticky */}
                 <div className="bg-white border border-[var(--color-surface)] flex px-0 shadow-sm rounded-none">
                     <div className="flex w-full">
@@ -376,7 +339,7 @@ function Home() {
                 <div className="bg-white border border-[var(--color-surface)] p-4 flex flex-col gap-4 shadow-sm rounded-none">
                     <div className="flex gap-4">
                         <Avatar className="h-10 w-10 border border-gray-100 rounded-none shrink-0 cursor-pointer hover:opacity-80 transition-opacity">
-                            <AvatarImage src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop" loading="lazy" />
+                            <AvatarImage src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop" />
                             <AvatarFallback>U</AvatarFallback>
                         </Avatar>
                         <Dialog open={isPostDialogOpen} onOpenChange={setIsPostDialogOpen}>
@@ -445,9 +408,8 @@ function Home() {
                 </div>
             </main>
 
-            {/* Left Sidebar - Recommendations & Trending (Desktop only or Mobile Stack) */}
-            <aside className="flex flex-col gap-6 lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)] overflow-y-auto pr-2 no-scrollbar pb-10 order-4 lg:order-3">
-                {/* Recommended Projects (4 items) */}
+            {/* Left Sidebar - Recommendations & Trending (2.5/12 approx) */}
+            <aside className="hidden lg:flex flex-col gap-6 sticky top-2 h-[calc(100vh-2rem)] overflow-y-auto pr-2 no-scrollbar pb-10">
                 {/* Recommended Projects */}
                 <div className="bg-white border border-[var(--color-surface)] p-6 shadow-sm rounded-none">
                     <div className="flex items-center justify-between mb-6">
@@ -458,8 +420,7 @@ function Home() {
                         {[
                             { id: 'sarah-jenkins', title: "Quantum State Sync", creator: "Sarah Jenkins", type: "Infrastructure" },
                             { id: 'nina-vo', title: "Bespoke Animations", creator: "Nina Vo", type: "UI/UX" },
-                            { id: 'dr-connor', title: "Mesh Protocols", creator: "Dr. Connor", type: "Core Architecture" },
-                            { id: 'marcus-r', title: "Shard Simulations", creator: "Marcus Reed", type: "Infra" }
+                            { id: 'dr-connor', title: "Mesh Protocols", creator: "Dr. Connor", type: "Core Architecture" }
                         ].map((project, i) => (
                             <NavLink key={i} to={`/profile/${project.id}`} className="group cursor-pointer block">
                                 <div className="flex justify-between items-start mb-1">
@@ -484,7 +445,7 @@ function Home() {
                         <TrendingUp size={16} className="text-[var(--color-accent)]" />
                     </div>
                     <div className="flex flex-col gap-5">
-                        {TRENDING_TOPICS.map((topic) => (
+                        {TRENDING_TOPICS.slice(0, 3).map((topic) => (
                             <div key={topic.name} className="group cursor-pointer">
                                 <div className="text-[10px] font-mono text-gray-400 capitalize tracking-wider mb-1 group-hover:text-[var(--color-accent)] transition-colors">Trending in Architecture</div>
                                 <div className="text-sm font-bold capitalize tracking-tight text-[var(--color-text)] mb-1">#{topic.name.replace(/\s+/g, '')}</div>
@@ -506,7 +467,7 @@ function Home() {
                             <div key={community.name} className="flex items-center justify-between group cursor-pointer">
                                 <div className="flex items-center gap-3">
                                     <Avatar className="h-8 w-8 rounded-none border border-gray-100 shrink-0">
-                                        <AvatarImage src={community.logo} loading="lazy" />
+                                        <AvatarImage src={community.logo} />
                                         <AvatarFallback className="text-[10px] font-bold bg-black text-white rounded-none">{community.name[0]}</AvatarFallback>
                                     </Avatar>
                                     <div>

@@ -171,7 +171,7 @@ function CreatePost({ initialExpanded = false, onPost }: { initialExpanded?: boo
                             {mediaFile.type.startsWith('video') ? (
                                 <video src={mediaPreview} controls className="w-full max-h-[280px] object-contain bg-black" />
                             ) : (
-                                <img src={mediaPreview} alt="Upload preview" loading="lazy" className="w-full max-h-[280px] object-contain" />
+                                <img src={mediaPreview} alt="Upload preview" className="w-full max-h-[280px] object-contain" />
                             )}
                             <div className="px-3 py-2 text-[10px] font-mono text-gray-400 uppercase tracking-widest border-t border-[var(--color-surface)] flex items-center justify-between">
                                 <span>{mediaFile.name}</span>

@@ -8,22 +8,7 @@
         --color-bg: #ededed;
         --color-secondary: #ced0ce;
         --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
-        --grid-cols-desktop: 2.75fr 8fr 2.75fr;
-        --grid-cols-tablet: 1fr 3fr;
     }
-}
-
-/* Touch Optimization */
-@media (pointer: coarse) {
-    button, a, input, [role="button"] {
-        min-height: 44px;
-        min-width: 44px;
-    }
-}
-
-.smooth-scroll {
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
 }
 
 body {

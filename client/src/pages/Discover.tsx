@@ -31,7 +31,7 @@ const NewsPost = ({ category, source, time, title, content, image, tags, readTim
 
             {image && (
                 <div className="mb-4 border border-[var(--color-surface)] rounded-none w-full relative overflow-hidden group/media">
-                    <img src={image} alt="Media" loading="lazy" className="w-full h-auto max-h-[300px] object-cover mix-blend-multiply group-hover/media:opacity-90 transition-opacity duration-300" />
+                    <img src={image} alt="Media" className="w-full h-auto max-h-[300px] object-cover mix-blend-multiply group-hover/media:opacity-90 transition-opacity duration-300" />
                 </div>
             )}
 
@@ -63,7 +63,7 @@ const TrendingSlide = ({ title, desc, image, tag, linkTo }: { title: string, des
         className="w-full h-[280px] md:h-[340px] rounded-none relative overflow-hidden group border border-[var(--color-surface)] bg-white hover:border-[var(--color-accent)] transition-all cursor-pointer"
         onClick={() => { window.location.href = linkTo; }}
     >
-        <img src={image} alt={title} loading="lazy" className="absolute right-0 top-0 w-2/3 md:w-1/2 h-full object-cover opacity-80 group-hover:scale-105 group-hover:opacity-100 transition-all duration-700 ease-out mix-blend-multiply [mask-image:linear-gradient(to_left,black_50%,transparent_100%)]" />
+        <img src={image} alt={title} className="absolute right-0 top-0 w-2/3 md:w-1/2 h-full object-cover opacity-80 group-hover:scale-105 group-hover:opacity-100 transition-all duration-700 ease-out mix-blend-multiply [mask-image:linear-gradient(to_left,black_50%,transparent_100%)]" />
         
         <div className="absolute inset-0 p-6 md:p-10 flex flex-col justify-center bg-gradient-to-r from-white via-white/90 to-transparent w-full md:w-2/3 pointer-events-none">
             <span className="inline-block px-2.5 py-1 bg-[var(--color-accent)]/10 text-[var(--color-accent)] text-[10px] font-bold capitalize tracking-wider mb-4 w-max border border-[var(--color-accent)]/20 shadow-sm">

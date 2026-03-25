@@ -159,7 +159,7 @@ function PostCard({ post }: PostCardProps) {
             <div className="flex justify-between items-start mb-4">
                 <NavLink to={`/profile/${post.author.id}`} className="flex items-center gap-3 group/author">
                     <div className="w-10 h-10 bg-[var(--color-surface)] rounded-none overflow-hidden relative border border-transparent group-hover/author:border-[var(--color-accent)] transition-all">
-                        {post.author.avatar && <img src={post.author.avatar} alt={post.author.name} loading="lazy" className="w-full h-full object-cover grayscale group-hover/author:grayscale-0 transition-all duration-500" />}
+                        {post.author.avatar && <img src={post.author.avatar} alt={post.author.name} className="w-full h-full object-cover grayscale group-hover/author:grayscale-0 transition-all duration-500" />}
                         <div className="absolute inset-0 border border-black/5"></div>
                     </div>
                     <div>
@@ -199,7 +199,7 @@ function PostCard({ post }: PostCardProps) {
                     <div className="mb-4 aspect-video w-full bg-[var(--color-surface)] overflow-hidden border border-[var(--color-surface)] rounded-none relative">
                         <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-all z-10 pointer-events-none"></div>
                         {post.media.type === 'image' ? (
-                            <img src={post.media.url} alt="Post attachment" loading="lazy" className="w-full h-full object-contain bg-gray-50 transform group-hover:scale-[1.02] transition-transform duration-700 ease-out" />
+                            <img src={post.media.url} alt="Post attachment" className="w-full h-full object-contain bg-gray-50 transform group-hover:scale-[1.02] transition-transform duration-700 ease-out" />
                         ) : (
                             <video src={post.media.url} controls className="w-full h-full object-contain bg-black" />
                         )}
@@ -213,7 +213,7 @@ function PostCard({ post }: PostCardProps) {
                             {/* Preview Image */}
                             {post.source.preview?.image && (
                                 <div className="h-48 md:h-full w-full md:w-48 shrink-0 bg-[var(--color-surface)] overflow-hidden relative">
-                                    <img src={post.source.preview.image} alt="Link preview" loading="lazy" className="w-full h-full object-cover group-hover/link:scale-110 transition-transform duration-500 grayscale group-hover/link:grayscale-0" />
+                                    <img src={post.source.preview.image} alt="Link preview" className="w-full h-full object-cover group-hover/link:scale-110 transition-transform duration-500 grayscale group-hover/link:grayscale-0" />
                                 </div>
                             )}
 
@@ -336,7 +336,7 @@ function PostCard({ post }: PostCardProps) {
                             <div key={c.id} className="flex gap-3 relative">
                                 <div className="absolute left-[16px] top-[16px] w-3 h-px bg-gray-200" />
                                 <div className="w-8 h-8 bg-[var(--color-surface)] shrink-0 overflow-hidden border border-[var(--color-surface)] relative">
-                                    {c.avatar && <img src={c.avatar} loading="lazy" className="w-full h-full object-cover grayscale" />}
+                                    {c.avatar && <img src={c.avatar} className="w-full h-full object-cover grayscale" />}
                                 </div>
                                 <div className="flex-1 bg-gray-50 p-3 border border-[var(--color-surface)] hover:border-gray-200 transition-colors rounded-none">
                                     <div className="flex justify-between items-center mb-1">
