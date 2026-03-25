@@ -30,6 +30,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { MOCK_USERS } from '@/utils/mockData';
 
 function OtherProfile() {
+    const [activeTab, setActiveTab] = useState('Overview');
+    const [isFollowing, setIsFollowing] = useState(false);
+    const [isSaved, setIsSaved] = useState(false);
+
     const { userId } = useParams();
     const navigate = useNavigate();
     const user = MOCK_USERS[userId || ""];
@@ -45,9 +49,6 @@ function OtherProfile() {
             </div>
         );
     }
-    const [activeTab, setActiveTab] = useState('Overview');
-    const [isFollowing, setIsFollowing] = useState(false);
-    const [isSaved, setIsSaved] = useState(false);
 
     const TABS = [
         { name: 'Overview', count: null },
@@ -130,7 +131,7 @@ function OtherProfile() {
                         </div>
                     </div>
 
-                    {/* 2. ACTION BAR */}
+                    
                     <div className="flex gap-3 pb-4">
                         <Tooltip>
                             <TooltipTrigger asChild>
