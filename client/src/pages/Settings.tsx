@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
     Bell, 
     Shield, 
-    User, 
+    User as UserIcon, 
     CreditCard, 
     Eye, 
     Settings as SettingsIcon, 
@@ -17,7 +17,8 @@ import {
     MessageSquare,
     Users,
     AppWindow,
-    MapPin
+    MapPin,
+    Camera
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Field, FieldLabel } from '../components/ui/field';
@@ -25,12 +26,57 @@ import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { Separator } from '../components/ui/separator';
 import { Textarea } from '../components/ui/textarea';
+import { useAuth } from '@/context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { updateUser, uploadAvatar } from '@/lib/firestore';
+import { toast } from 'sonner';
 
 function Settings() {
+    const { currentUser, signOut } = useAuth();
+    const navigate = useNavigate();
     const [activeSection, setActiveSection] = useState('Edit profile');
+    const [displayName, setDisplayName] = useState(currentUser?.displayName || '');
+    const [updating, setUpdating] = useState(false);
+
+    const handleSignOut = async () => {
+        try {
+            await signOut();
+            navigate('/login');
+        } catch (error) {
+            toast.error("Failed to sign out");
+        }
+    };
+
+    const handleSaveProfile = async () => {
+        if (!currentUser) return;
+        setUpdating(true);
+        try {
+            await updateUser(currentUser.uid, { displayName });
+            toast.success("Profile updated successfully");
+        } catch (error) {
+            toast.error("Failed to update profile");
+        } finally {
+            setUpdating(false);
+        }
+    };
+
+    const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !currentUser) return;
+        
+        setUpdating(true);
+        try {
+            await uploadAvatar(currentUser.uid, file);
+            toast.success("Avatar updated!");
+        } catch (error) {
+            toast.error("Upload failed");
+        } finally {
+            setUpdating(false);
+        }
+    };
 
     const sections = [
-        { id: 'Edit profile', icon: User, label: 'Edit profile' },
+        { id: 'Edit profile', icon: UserIcon, label: 'Edit profile' },
         { id: 'Password', icon: Shield, label: 'Password' },
         { id: 'Notifications', icon: Bell, label: 'Notifications' },
         { id: 'Chat export', icon: MessageSquare, label: 'Chat export' },
@@ -51,11 +97,15 @@ function Settings() {
                                 <div>
                                     <label className="block text-[10px] font-bold mb-4 uppercase tracking-widest opacity-40">Profile Avatar</label>
                                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-                                        <div className="w-24 h-24 rounded-none bg-cover bg-center border border-[var(--color-surface)] shadow-sm" 
-                                             style={{ backgroundImage: "url('https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=256&h=256&auto=format&fit=crop')" }}>
+                                        <div className="w-24 h-24 rounded-none bg-cover bg-center border border-[var(--color-surface)] shadow-sm relative group" 
+                                             style={{ backgroundImage: `url(${currentUser?.photoURL || 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=256&h=256&auto=format&fit=crop'})` }}>
+                                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
+                                                 <Camera size={20} className="text-white" />
+                                                 <input type="file" onChange={handleAvatarUpload} className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" />
+                                             </div>
                                         </div>
                                         <div className="space-y-3">
-                                            <Button className="bg-[var(--color-text)] text-white hover:bg-[var(--color-accent)] py-2.5 px-6 h-auto text-[10px] font-bold uppercase tracking-widest rounded-none transition-all shadow-sm">
+                                            <Button disabled={updating} onClick={() => document.querySelector<HTMLInputElement>('input[type="file"]')?.click()} className="bg-[var(--color-text)] text-white hover:bg-[var(--color-accent)] py-2.5 px-6 h-auto text-[10px] font-bold uppercase tracking-widest rounded-none transition-all shadow-sm">
                                                 Update Photo
                                             </Button>
                                             <p className="text-[10px] opacity-40 uppercase font-bold tracking-widest">JPG or PNG • Max 2MB</p>
@@ -66,8 +116,8 @@ function Settings() {
                                 <Field>
                                     <FieldLabel className="uppercase tracking-widest opacity-40 text-[10px] font-bold mb-3">Display Name</FieldLabel>
                                     <div className="relative group">
-                                        <User className="absolute left-4 top-1/2 -translate-y-1/2 opacity-20 text-[var(--color-text)] group-focus-within:text-[#6366f1] group-focus-within:opacity-100 transition-all" size={16} />
-                                        <Input defaultValue="Username or email" className="pl-12 h-14 bg-white border border-[var(--color-surface)] rounded-none font-medium text-sm transition-all focus:ring-0 focus:border-[#6366f1] shadow-sm" />
+                                        <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 opacity-20 text-[var(--color-text)] group-focus-within:text-[#6366f1] group-focus-within:opacity-100 transition-all" size={16} />
+                                        <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="pl-12 h-14 bg-white border border-[var(--color-surface)] rounded-none font-medium text-sm transition-all focus:ring-0 focus:border-[#6366f1] shadow-sm" />
                                     </div>
                                 </Field>
 
@@ -85,13 +135,13 @@ function Settings() {
                                         <span className="text-[10px] font-mono opacity-30">880</span>
                                     </div>
                                     <div className="relative group">
-                                        <User className="absolute left-4 top-5 opacity-20 text-[var(--color-text)] group-focus-within:text-[#6366f1] group-focus-within:opacity-100 transition-all" size={16} />
+                                        <UserIcon className="absolute left-4 top-5 opacity-20 text-[var(--color-text)] group-focus-within:text-[#6366f1] group-focus-within:opacity-100 transition-all" size={16} />
                                         <Textarea placeholder="Short bio" className="pl-12 pt-4 min-h-[140px] bg-white border border-[var(--color-surface)] rounded-none font-medium text-sm resize-none transition-all focus:ring-0 focus:border-[#6366f1] shadow-sm" />
                                     </div>
                                 </Field>
 
-                                <Button className="w-full h-16 bg-[#6366f1] text-white hover:bg-[#4f46e5] font-bold uppercase tracking-widest rounded-none shadow-sm transition-all active:scale-[0.98] text-xs">
-                                    Save Protocol Changes
+                                <Button onClick={handleSaveProfile} disabled={updating} className="w-full h-16 bg-[#6366f1] text-white hover:bg-[#4f46e5] font-bold uppercase tracking-widest rounded-none shadow-sm transition-all active:scale-[0.98] text-xs">
+                                    {updating ? 'Processing...' : 'Save Protocol Changes'}
                                 </Button>
                             </div>
                         </section>
@@ -373,7 +423,11 @@ function Settings() {
                         </nav>
                         
                         <div className="mt-12 pt-12 border-t border-[var(--color-surface)]">
-                            <button className="flex items-center gap-4 px-6 py-4 text-red-500 hover:text-red-600 transition-all group w-full text-left rounded-none hover:bg-red-50/50">
+                            <button onClick={handleSignOut} className="flex items-center gap-4 px-6 py-4 text-red-500 hover:text-red-600 transition-all group w-full text-left rounded-none hover:bg-red-50/50">
+                                <LogOut size={18} />
+                                <span className="text-xs font-bold uppercase tracking-widest">Sign Out Terminal</span>
+                            </button>
+                            <button className="flex items-center gap-4 px-6 py-4 text-gray-400 hover:text-red-600 transition-all group w-full text-left rounded-none hover:bg-red-50/50 mt-2">
                                 <Trash2 size={18} />
                                 <span className="text-xs font-bold uppercase tracking-widest">Delete account</span>
                             </button>

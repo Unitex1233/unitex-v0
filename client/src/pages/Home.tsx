@@ -3,11 +3,13 @@ import { NavLink } from 'react-router-dom';
 import PostCard, { Post } from '@/components/PostCard';
 import CreatePost, { CreatePostMedia } from '@/components/CreatePost';
 import { UnifiedProfileCard } from '@/components/UnifiedProfileCard';
-import { TrendingUp, Users, Zap, ArrowRight, ArrowUpRight, BookOpen, Search, Flame, Clock, Star, Image as ImageIcon, Link, LayoutGrid, Rss, Plus, Rocket, UserPlus, Activity } from 'lucide-react';
+import { TrendingUp, Users, Zap, ArrowUpRight, Image as ImageIcon, Link, Plus, Rocket, UserPlus, Activity } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useNotifications } from '@/context/NotificationContext';
+import { useAuth } from '@/context/AuthContext';
+import { subscribeToPosts, createPost } from '@/lib/firestore';
 
 // Mock Data representing the "Progress First" Logic
 const SAMPLE_POSTS: Post[] = [
@@ -233,32 +235,56 @@ const FOLLOWING_POSTS: Post[] = [
 
 function Home() {
     const { addNotification } = useNotifications();
+    const { currentUser } = useAuth();
     const [posts, setPosts] = useState<Post[]>(SAMPLE_POSTS);
     const [activeSort, setActiveSort] = useState('new');
     const [feedType, setFeedType] = useState('for-you');
     const [isPostDialogOpen, setIsPostDialogOpen] = useState(false);
 
-    const handleCreatePost = (content: string, label: string | null, media?: CreatePostMedia) => {
-        const newPost: Post = {
-            id: Date.now().toString(),
-            author: {
-                id: 'alexander-me',
-                name: 'Alexander',
-                role: 'Product Designer',
-                avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop'
-            },
-            timestamp: 'Just now',
-            content,
-            label: label ? (label as Post['label']) : undefined,
-            media: media ? { type: media.type, url: media.url } : undefined,
-            stats: { likes: 0, support: 0, comments: 0 }
-        };
-        setPosts(prev => [newPost, ...prev]);
-        setIsPostDialogOpen(false);
-        addNotification({
-            type: 'system',
-            content: `Your post has been synchronized to the network.`,
+    // Subscribe to live Firestore posts
+    useEffect(() => {
+        const unsub = subscribeToPosts((livePosts) => {
+            if (livePosts.length > 0) {
+                setPosts(livePosts as Post[]);
+            }
         });
+        return () => unsub();
+    }, []);
+
+    const handleCreatePost = async (content: string, label: string | null, media?: CreatePostMedia) => {
+        setIsPostDialogOpen(false);
+        try {
+            await createPost({
+                uid: currentUser?.uid || 'anonymous',
+                displayName: currentUser?.displayName || 'Anonymous',
+                photoURL: currentUser?.photoURL || '',
+                role: 'Member',
+                content,
+                label: label || undefined,
+            });
+            addNotification({
+                type: 'system',
+                content: `Your post has been synchronized to the network.`,
+            });
+        } catch (err) {
+            console.error('Failed to create post:', err);
+            // Optimistic fallback
+            const newPost: Post = {
+                id: Date.now().toString(),
+                author: {
+                    id: currentUser?.uid || 'anon',
+                    name: currentUser?.displayName || 'Anonymous',
+                    role: 'Member',
+                    avatar: currentUser?.photoURL || ''
+                },
+                timestamp: 'Just now',
+                content,
+                label: label ? (label as Post['label']) : undefined,
+                media: media ? { type: media.type, url: media.url } : undefined,
+                stats: { likes: 0, support: 0, comments: 0 }
+            };
+            setPosts(prev => [newPost, ...prev]);
+        }
     };
 
     const TRENDING_TOPICS = [
@@ -275,7 +301,7 @@ function Home() {
     ];
 
     return (
-               <div className="grid grid-cols-1 lg:grid-cols-[2.5fr_8.5fr_2.5fr] gap-6 w-full max-w-full px-0.5 lg:px-0.5 pt-1 pb-8 mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-[2.5fr_8.5fr_2.5fr] gap-6 w-full max-w-full px-0.5 lg:px-0.5 pt-1 pb-8 mx-auto">
             {/* Right Sidebar - Profile & Stats + Connections (2.5/12 approx) */}
             <aside className="hidden lg:flex flex-col gap-6 sticky top-2 h-[calc(100vh-2rem)] overflow-y-auto pr-2 no-scrollbar pb-10">
                 <UnifiedProfileCard />

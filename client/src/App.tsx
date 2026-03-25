@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import Discover from './pages/Discover';
@@ -16,36 +16,60 @@ import Dashboard from './pages/Dashboard';
 import OtherProfile from '@/pages/OtherProfile';
 import EventDetail from '@/pages/EventDetail';
 import DiscoverDetail from '@/pages/DiscoverDetail';
+import Login from './pages/Login';
 import { NotificationProvider } from './context/NotificationContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { Toaster } from 'sonner';
+
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+    const { currentUser } = useAuth();
+    if (!currentUser) return <Navigate to="/login" replace />;
+    return <>{children}</>;
+}
+
+function AppRoutes() {
+    return (
+        <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route
+                path="/"
+                element={
+                    <ProtectedRoute>
+                        <Layout />
+                    </ProtectedRoute>
+                }
+            >
+                <Route index element={<Home />} />
+                <Route path="discover" element={<Discover />} />
+                <Route path="discover/:slug" element={<DiscoverDetail />} />
+                <Route path="notifications" element={<Notifications />} />
+                <Route path="communities" element={<Communities />} />
+                <Route path="communities/:communityId" element={<CommunityPage />} />
+                <Route path="events" element={<Events />} />
+                <Route path="events/:eventId" element={<EventDetail />} />
+                <Route path="networking" element={<Networking />} />
+                <Route path="roadmaps" element={<Resources />} />
+                <Route path="courses" element={<Resources />} />
+                <Route path="resources" element={<Resources />} />
+                <Route path="messages" element={<Messages />} />
+                <Route path="vault" element={<Vault />} />
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="profile" element={<Profile />} />
+                <Route path="profile/:userId" element={<OtherProfile />} />
+                <Route path="settings" element={<Settings />} />
+            </Route>
+        </Routes>
+    );
+}
 
 function App() {
     return (
-        <NotificationProvider>
-            <Toaster position="top-center" expand={true} richColors />
-            <Routes>
-                <Route path="/" element={<Layout />}>
-                    <Route index element={<Home />} />
-                    <Route path="discover" element={<Discover />} />
-                    <Route path="discover/:slug" element={<DiscoverDetail />} />
-                    <Route path="notifications" element={<Notifications />} />
-                    <Route path="communities" element={<Communities />} />
-                    <Route path="communities/:communityId" element={<CommunityPage />} />
-                    <Route path="events" element={<Events />} />
-                    <Route path="events/:eventId" element={<EventDetail />} />
-                    <Route path="networking" element={<Networking />} />
-                    <Route path="roadmaps" element={<Resources />} />
-                    <Route path="courses" element={<Resources />} />
-                    <Route path="resources" element={<Resources />} />
-                    <Route path="messages" element={<Messages />} />
-                    <Route path="vault" element={<Vault />} />
-                    <Route path="dashboard" element={<Dashboard />} />
-                    <Route path="profile" element={<Profile />} />
-                    <Route path="profile/:userId" element={<OtherProfile />} />
-                    <Route path="settings" element={<Settings />} />
-                </Route>
-            </Routes>
-        </NotificationProvider>
+        <AuthProvider>
+            <NotificationProvider>
+                <Toaster position="top-center" expand={true} richColors />
+                <AppRoutes />
+            </NotificationProvider>
+        </AuthProvider>
     );
 }
 

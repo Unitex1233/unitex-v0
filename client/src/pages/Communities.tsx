@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Users, Trophy, Zap, ArrowRight, Plus } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
@@ -7,6 +7,9 @@ import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTi
 import { Field } from '../components/ui/field';
 import { cn } from '../lib/utils';
 import { Dialog, DialogContent, DialogTrigger } from "../components/ui/dialog";
+import { getCommunities } from '@/lib/firestore';
+import { useAuth } from '@/context/AuthContext';
+import { toast } from 'sonner';
 
 const Badge = ({ children, className }: { children: React.ReactNode, className?: string }) => (
     <span className={cn("px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider border", className)}>
@@ -14,121 +17,56 @@ const Badge = ({ children, className }: { children: React.ReactNode, className?:
     </span>
 );
 
+const MOCK_COMMUNITIES = [
+    {
+        id: '1',
+        name: "React Flow",
+        description: "The largest community of React developers building modern UIs.",
+        members: "14.2k",
+        active: "Very High",
+        category: "Tech",
+        image: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=600&auto=format&fit=crop",
+        logo: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=200&auto=format&fit=crop",
+        rank: 1,
+        tags: ["React", "Frontend", "UI"]
+    },
+    {
+        id: '2',
+        name: "Indie Hackers NYC",
+        description: "Local meetup group for bootstrapped founders in the greater NY area.",
+        members: "8.5k",
+        active: "High",
+        category: "Founders",
+        image: "https://images.unsplash.com/photo-1496469888073-80de7e952517?q=80&w=600&auto=format&fit=crop",
+        logo: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?q=80&w=200&auto=format&fit=crop",
+        rank: 2,
+        tags: ["Startup", "SaaS", "Networking"]
+    }
+];
+
 function Communities() {
     const navigate = useNavigate();
+    const { currentUser } = useAuth();
     const [activeCategory, setActiveCategory] = useState('All');
+    const [communities, setCommunities] = useState<any[]>(MOCK_COMMUNITIES);
+    const [loading, setLoading] = useState(true);
 
-    interface Community {
-        id: number;
-        name: string;
-        description: string;
-        members: string;
-        active: string; 
-        category: string;
-        image: string; 
-        logo: string; 
-        rank: number;
-        tags: string[];
-    }
-
-    const communities: Community[] = [
-        {
-            id: 1,
-            name: "React Flow",
-            description: "The largest community of React developers building modern UIs.",
-            members: "14.2k",
-            active: "Very High",
-            category: "Tech",
-            image: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=600&auto=format&fit=crop",
-            logo: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=200&auto=format&fit=crop",
-            rank: 1,
-            tags: ["React", "Frontend", "UI"]
-        },
-        {
-            id: 2,
-            name: "Indie Hackers NYC",
-            description: "Local meetup group for bootstrapped founders in the greater NY area.",
-            members: "8.5k",
-            active: "High",
-            category: "Founders",
-            image: "https://images.unsplash.com/photo-1496469888073-80de7e952517?q=80&w=600&auto=format&fit=crop",
-            logo: "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?q=80&w=200&auto=format&fit=crop",
-            rank: 2,
-            tags: ["Startup", "SaaS", "Networking"]
-        },
-        {
-            id: 3,
-            name: "Design Systems",
-            description: "Discussions on tokens, components, and scaling design operations.",
-            members: "11.1k",
-            active: "Very High",
-            category: "Design",
-            image: "https://images.unsplash.com/photo-1561070791-2526d30994b5?q=80&w=600&auto=format&fit=crop",
-            logo: "https://images.unsplash.com/photo-1581291518633-83b4ebd1d83e?q=80&w=200&auto=format&fit=crop",
-            rank: 3,
-            tags: ["Figma", "UX", "Ops"]
-        },
-        {
-            id: 4,
-            name: "AI Builders",
-            description: "Exploring LLMs, agents, and the future of generative AI.",
-            members: "9.3k",
-            active: "Extreme",
-            category: "AI",
-            image: "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?q=80&w=600&auto=format&fit=crop",
-            logo: "https://images.unsplash.com/photo-1677442136019-21780ecad995?q=80&w=200&auto=format&fit=crop",
-            rank: 4,
-            tags: ["ML", "Python", "Research"]
-        },
-        {
-            id: 5,
-            name: "Fintech Futurists",
-            description: "Building the next generation of financial infrastructure.",
-            members: "5.2k",
-            active: "Moderate",
-            category: "Fintech",
-            image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=600&auto=format&fit=crop",
-            logo: "https://images.unsplash.com/photo-1621416894569-0f39ed31d247?q=80&w=200&auto=format&fit=crop",
-            rank: 5,
-            tags: ["Web3", "Finance", "Crypto"]
-        },
-        {
-            id: 6,
-            name: "Marketing Pros",
-            description: "Growth hacking strategies and campaign breakdowns.",
-            members: "7.8k",
-            active: "High",
-            category: "Marketing",
-            image: "https://images.unsplash.com/photo-1557804506-669a67965ba0?q=80&w=600&auto=format&fit=crop",
-            logo: "https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=200&auto=format&fit=crop",
-            rank: 6,
-            tags: ["Growth", "SEO", "Content"]
-        },
-        {
-            id: 7,
-            name: "Biohackers Elite",
-            description: "Optimizing human performance through science and technology.",
-            members: "3.4k",
-            active: "Moderate",
-            category: "Science",
-            image: "https://images.unsplash.com/photo-1530026405186-ed1f139313f8?q=80&w=600&auto=format&fit=crop",
-            logo: "https://images.unsplash.com/photo-1532187863486-abf9d3c17ec1?q=80&w=200&auto=format&fit=crop",
-            rank: 7,
-            tags: ["Health", "Biology", "Longevity"]
-        },
-        {
-            id: 8,
-            name: "The Founders Club",
-            description: "High-level networking for vetted secondaries and series B+ founders.",
-            members: "1.2k",
-            active: "High",
-            category: "Founders",
-            image: "https://images.unsplash.com/photo-1521791136064-7986c2923216?q=80&w=600&auto=format&fit=crop",
-            logo: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=200&auto=format&fit=crop",
-            rank: 8,
-            tags: ["VC", "Scaling", "Exit"]
-        }
-    ];
+    useEffect(() => {
+        const fetchCommunities = async () => {
+            try {
+                const data = await getCommunities();
+                if (data.length > 0) {
+                    setCommunities(data);
+                }
+            } catch (error) {
+                console.error("Error fetching communities:", error);
+                toast.error("Failed to load communities");
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchCommunities();
+    }, []);
 
     const categories = ["All", "Tech", "Design", "Founders", "AI", "Marketing", "Fintech", "Science"];
 
@@ -252,7 +190,7 @@ function Communities() {
 
                                         {/* Tags */}
                                         <div className="flex gap-2 mb-4">
-                                            {community.tags.slice(0, 3).map(tag => (
+                                            {community.tags?.slice(0, 3).map((tag: string) => (
                                                 <span key={tag} className="text-[8px] font-bold bg-gray-50 text-gray-500 px-1.5 py-0.5 rounded-none border border-gray-100 uppercase tracking-wide">
                                                     {tag}
                                                 </span>

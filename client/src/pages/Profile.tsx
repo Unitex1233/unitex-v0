@@ -1,20 +1,47 @@
-import { useState } from 'react';
-import { User, Mail, Shield, Zap, ArrowRight, Github, Twitter, Linkedin, Globe, Settings, ChevronDown, CreditCard, Bell, LogOut, Heart, MessageSquare, Pin, Star, BookOpen, ExternalLink, Copy, Users, LayoutGrid, Flame, Smartphone, Laptop, Monitor } from 'lucide-react';
-import PostCard from '@/components/PostCard';
+import { useState, useEffect } from 'react';
+import { User as UserIcon, Mail, Shield, Zap, ArrowRight, Github, Twitter, Linkedin, Globe, Settings, ChevronDown, CreditCard, Bell, LogOut, Heart, MessageSquare, Pin, Star, BookOpen, ExternalLink, Copy, Users, LayoutGrid, Flame, Smartphone, Laptop, Monitor } from 'lucide-react';
+import PostCard, { Post } from '@/components/PostCard';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
+import { db } from '@/lib/firebase';
+import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 
 function Profile() {
+    const { currentUser, signOut } = useAuth();
     const [activeSection, setActiveSection] = useState('Posts');
+    const [userPosts, setUserPosts] = useState<Post[]>([]);
     const navigate = useNavigate();
 
-    const profileUrl = "https://unitex.io/profile/alexander";
+    useEffect(() => {
+        if (!currentUser) return;
+        const q = query(
+            collection(db, 'posts'),
+            where('uid', '==', currentUser.uid),
+            orderBy('createdAt', 'desc')
+        );
+        const unsub = onSnapshot(q, (snap) => {
+            setUserPosts(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Post[]);
+        });
+        return () => unsub();
+    }, [currentUser]);
+
+    const profileUrl = `https://unitex.io/profile/${currentUser?.uid || 'user'}`;
     const copyProfileUrl = () => {
         navigator.clipboard.writeText(profileUrl);
         toast.success("Profile URL copied!");
+    };
+
+    const handleSignOut = async () => {
+        try {
+            await signOut();
+            navigate('/login');
+        } catch (error) {
+            toast.error("Failed to log out");
+        }
     };
 
     const TABS = ['Posts', 'About', 'Activity', 'Education', 'Experience'];
@@ -36,11 +63,11 @@ function Profile() {
                 <div className="px-8 -mt-12 mb-2 flex flex-col md:flex-row justify-between items-end gap-4 text-[var(--color-text)]">
                     <div className="flex flex-col md:flex-row items-end gap-6">
                         <div className="w-32 h-32 border-4 border-white shadow-lg bg-white overflow-hidden relative rounded-none">
-                            <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=400&auto=format&fit=crop" className="w-full h-full object-cover" alt="Profile" />
+                            <img src={currentUser?.photoURL || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=400&auto=format&fit=crop"} className="w-full h-full object-cover" alt="Profile" />
                         </div>
                         <div className="pb-2">
                             <div className="flex items-center gap-3 mb-1">
-                                <h1 className="text-3xl font-bold tracking-tight text-[var(--color-text)] leading-tight">Alexander</h1>
+                                <h1 className="text-3xl font-bold tracking-tight text-[var(--color-text)] leading-tight">{currentUser?.displayName || 'User'}</h1>
                                 <div className="px-2 py-0.5 bg-[var(--color-surface)] text-[var(--color-text)] text-[9px] font-bold uppercase tracking-widest border border-[var(--color-surface)] rounded-none">
                                     PRO MEMBER
                                 </div>
@@ -59,11 +86,11 @@ function Profile() {
                                 <div className="h-4 w-px bg-gray-100" />
                                 <div className="flex items-center gap-6">
                                     <div className="flex items-center gap-2">
-                                        <span className="text-sm font-bold text-[var(--color-text)]">2,482</span>
+                                        <span className="text-sm font-bold text-[var(--color-text)]">0</span>
                                         <span className="text-[9px] font-medium text-gray-400 uppercase tracking-widest">Followers</span>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-sm font-bold text-[var(--color-text)]">842</span>
+                                        <span className="text-sm font-bold text-[var(--color-text)]">0</span>
                                         <span className="text-[9px] font-medium text-gray-400 uppercase tracking-widest">Following</span>
                                     </div>
                                     <div className="h-4 w-px bg-gray-100" />
@@ -221,19 +248,13 @@ function Profile() {
 
                         {activeSection === 'Posts' && (
                             <div className="space-y-6">
-                                {[
-                                    {
-                                        id: 'p1',
-                                        author: { name: 'Alexander', role: 'Product Designer', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=400&auto=format&fit=crop' },
-                                        timestamp: '1h ago',
-                                        content: "Just released a new design pattern for high-density dashboards. Focuses on spatial hierarchy and visceral feedback. #UI #Design #UniteX",
-                                        label: 'success',
-                                        media: { type: 'image', url: 'https://images.unsplash.com/photo-1551288049-bbbda5366391?q=80&w=800&auto=format&fit=crop' },
-                                        stats: { likes: 124, support: 45, comments: 12 }
-                                    }
-                                ].map((post) => (
-                                    <PostCard key={post.id} post={post as any} />
-                                ))}
+                                {userPosts.length > 0 ? (
+                                    userPosts.map((post) => (
+                                        <PostCard key={post.id} post={post} />
+                                    ))
+                                ) : (
+                                    <div className="py-12 text-center text-gray-400 italic text-sm">No posts yet.</div>
+                                )}
                             </div>
                         )}
 

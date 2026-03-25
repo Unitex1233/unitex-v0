@@ -29,3 +29,7 @@ Dockerfile.override
 # Firebase
 firebase-debug.log
 .firebase/
+*.local
+
+# Vite timestamp cache files
+*.mjs
