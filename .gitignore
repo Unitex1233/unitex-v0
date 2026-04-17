@@ -30,6 +30,7 @@ Dockerfile.override
 firebase-debug.log
 .firebase/
 *.local
+service-account.json
 
 # Vite timestamp cache files
 *.mjs
