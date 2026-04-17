@@ -1,13 +1,43 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Copy, Users, ExternalLink } from 'lucide-react';
+import { Copy, Users, Zap, Award } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
+import { ref, onValue } from 'firebase/database';
+import { rtdb } from '@/lib/firebase';
 
 export function UnifiedProfileCard() {
-    const profileUrl = "https://unitex.io/profile/alexander";
+    const { currentUser } = useAuth();
+    const [vp, setVp] = useState<number>(0);
+    const [niche, setNiche] = useState<string>('Initialization Pending');
+    const [username, setUsername] = useState<string>('');
+    const [usercode, setUsercode] = useState<string>('');
+    const [displayName, setDisplayName] = useState<string>('Anonymous Node');
+    const [photoURL, setPhotoURL] = useState<string>('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200&auto=format&fit=crop');
+
+    useEffect(() => {
+        if (!currentUser?.uid) return;
+        
+        const userRef = ref(rtdb, `users/${currentUser.uid}`);
+        const unsubscribe = onValue(userRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                setVp(data.vp || 0);
+                setNiche(data.niche || (data.tags && data.tags.length > 0 ? data.tags[0] : 'General Node'));
+                setUsername(data.username || '');
+                setUsercode(data.usercode || '');
+                setDisplayName(data.displayName || currentUser?.displayName || 'Anonymous Node');
+                setPhotoURL(data.photoURL || currentUser?.photoURL || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200&auto=format&fit=crop');
+            }
+        });
+        
+        return () => unsubscribe();
+    }, [currentUser]);
+
+    const profileUrl = `https://unitex.io/profile/${username || currentUser?.uid || 'guest'}`;
 
     const copyProfileUrl = () => {
         navigator.clipboard.writeText(profileUrl);
@@ -17,36 +47,35 @@ export function UnifiedProfileCard() {
     return (
         <div className="bg-white border border-[var(--color-surface)] overflow-hidden flex flex-col shadow-sm">
             {/* Banner/Header Portion */}
-            <div className="h-16 bg-[var(--color-surface)] w-full" />
+            <div className="h-16 bg-gradient-to-r from-[var(--color-surface)] to-[#F4511C]/10 w-full" />
 
             {/* Photo Underneath Left-Aligned */}
             <NavLink to="/profile" className="px-4 -mt-8 mb-4 block hover:opacity-80 transition-opacity">
                 <Avatar className="w-16 h-16 rounded-none border-4 border-white shadow-sm">
-                    <AvatarImage src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200&auto=format&fit=crop" />
-                    <AvatarFallback>U</AvatarFallback>
+                    <AvatarImage src={photoURL} />
+                    <AvatarFallback className="bg-[#09090b] text-white rounded-none">{displayName.charAt(0)}</AvatarFallback>
                 </Avatar>
             </NavLink>
 
             {/* Info Section */}
             <div className="px-4 pb-4">
                 <NavLink to="/profile">
-                    <h2 className="text-lg font-bold text-[var(--color-text)] capitalize tracking-tight hover:text-[var(--color-accent)] transition-colors">Alexander</h2>
+                    <h2 className="text-lg font-bold text-[var(--color-text)] capitalize tracking-tight hover:text-[var(--color-accent)] transition-colors">{displayName}</h2>
                 </NavLink>
-                <p className="text-[10px] text-gray-400 font-mono capitalize mb-4">Product designer @ UniteX</p>
+                <p className="text-[10px] font-bold text-[var(--color-accent)] mb-1">@{username.replace(/^@/, '')}</p>
+                <div className="flex items-center gap-1.5 mb-4 mt-1">
+                    <p className="text-[9px] text-gray-400 font-mono capitalize tracking-widest">{niche}</p>
+                </div>
 
-                {/* Consolidated Stats */}
-                <div className="border-y border-[var(--color-surface)] py-3 space-y-2 mb-4">
+                {/* Intelligence Stats */}
+                <div className="border-y border-[var(--color-surface)] py-3 space-y-2 mb-4 bg-gray-50/50 -mx-4 px-4">
                     <div className="flex justify-between items-center text-[9px] font-bold capitalize tracking-tight text-gray-400">
-                        <span>Profile views</span>
-                        <span className="text-[var(--color-accent)]">1,248</span>
+                        <span className="flex items-center gap-1.5"><Award size={12} className="text-[#F4511C]" /> Value Points (VP)</span>
+                        <span className="text-[var(--color-accent)] font-mono text-xs">{vp.toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between items-center text-[9px] font-bold capitalize tracking-tight text-gray-400">
-                        <span>Followers</span>
-                        <span className="text-[var(--color-text)]">2,482</span>
-                    </div>
-                    <div className="flex justify-between items-center text-[9px] font-bold capitalize tracking-tight text-gray-400">
-                        <span>Following</span>
-                        <span className="text-[var(--color-text)]">842</span>
+                        <span>Profile Level</span>
+                        <span className="text-[var(--color-text)]">{Math.floor(vp / 100) + 1}</span>
                     </div>
                 </div>
 
@@ -59,7 +88,7 @@ export function UnifiedProfileCard() {
                         onClick={copyProfileUrl}
                     >
                         <Copy size={12} />
-                        Copy profile URL
+                        Copy Node URL
                     </Button>
                     <NavLink to="/networking">
                         <Button

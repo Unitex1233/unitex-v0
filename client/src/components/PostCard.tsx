@@ -3,6 +3,8 @@ import { MessageSquare, Share2, Heart, HeartHandshake, ExternalLink, AlertTriang
 import { NavLink } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
+import { createNotification } from '@/lib/firestore';
 
 
 export interface Post {
@@ -10,6 +12,8 @@ export interface Post {
     author: {
         id: string;
         name: string;
+        username?: string;
+        usercode?: string;
         avatar?: string;
         role?: string;
     };
@@ -34,7 +38,14 @@ export interface Post {
         likes: number;
         support: number;
         comments: number;
+        shares: number;
     };
+    ai?: {
+        qualityScore: number;
+        tags: string[];
+        isSpam?: boolean;
+    };
+    createdAtMillis?: number;
     comments?: {
         id: number | string;
         author: string;
@@ -68,6 +79,7 @@ const PLATFORM_CONFIG = {
 };
 
 function PostCard({ post }: PostCardProps) {
+    const { currentUser } = useAuth();
     const labelStyle = post.label && post.label in LABEL_CONFIG
         ? LABEL_CONFIG[post.label as keyof typeof LABEL_CONFIG]
         : post.label
@@ -86,20 +98,38 @@ function PostCard({ post }: PostCardProps) {
     const [commentCount, setCommentCount] = useState(post.stats.comments);
     const [shared, setShared] = useState(false);
 
-    const handleLike = () => {
-        setLiked(prev => {
-            const newState = !prev;
-            setLikeCount(c => newState ? c + 1 : c - 1);
-            return newState;
-        });
+    const handleLike = async () => {
+        const newState = !liked;
+        setLiked(newState);
+        setLikeCount(c => newState ? c + 1 : c - 1);
+        
+        if (newState && currentUser && post.author.id !== currentUser.uid) {
+            await createNotification({
+                recipientUid: post.author.id,
+                senderUid: currentUser.uid,
+                senderName: currentUser.displayName || 'Someone',
+                type: 'like',
+                content: `liked your post: "${post.content.substring(0, 30)}..."`,
+                actionUrl: `/profile/${post.author.id}` // Or a specific post link if available
+            });
+        }
     };
 
-    const handleSupport = () => {
-        setSupported(prev => {
-            const newState = !prev;
-            setSupportCount(c => newState ? c + 1 : c - 1);
-            return newState;
-        });
+    const handleSupport = async () => {
+        const newState = !supported;
+        setSupported(newState);
+        setSupportCount(c => newState ? c + 1 : c - 1);
+
+        if (newState && currentUser && post.author.id !== currentUser.uid) {
+            await createNotification({
+                recipientUid: post.author.id,
+                senderUid: currentUser.uid,
+                senderName: currentUser.displayName || 'Someone',
+                type: 'support',
+                content: `supported your post: "${post.content.substring(0, 30)}..."`,
+                actionUrl: `/profile/${post.author.id}`
+            });
+        }
     };
 
     const handleShare = async () => {
@@ -137,19 +167,31 @@ function PostCard({ post }: PostCardProps) {
         }
     };
 
-    const handleAddComment = () => {
-        if (!commentText.trim()) return;
+    const handleAddComment = async () => {
+        if (!commentText.trim() || !currentUser) return;
+        const text = commentText;
         const newComment = {
             id: Date.now().toString(),
-            author: 'Alexander',
-            authorId: 'alexander-me',
-            avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop',
-            text: commentText,
+            author: currentUser.displayName || 'Me',
+            authorId: currentUser.uid,
+            avatar: currentUser.photoURL || undefined,
+            text: text,
             time: 'Just now',
         };
         setLocalComments(prev => [...prev, newComment]);
         setCommentCount(prev => prev + 1);
         setCommentText('');
+
+        if (post.author.id !== currentUser.uid) {
+            await createNotification({
+                recipientUid: post.author.id,
+                senderUid: currentUser.uid,
+                senderName: currentUser.displayName || 'Someone',
+                type: 'comment',
+                content: `commented: "${text.substring(0, 30)}..."`,
+                actionUrl: `/profile/${post.author.id}`
+            });
+        }
     };
 
     return (
@@ -168,8 +210,9 @@ function PostCard({ post }: PostCardProps) {
                             {post.author.role && <span className="text-xs capitalize font-mono text-[var(--color-accent)] tracking-wider">{post.author.role}</span>}
                         </div>
                         <div className="flex items-center gap-2 mt-1">
-                            <p className="text-xs text-[var(--color-text)] opacity-40 font-mono capitalize">{post.timestamp}</p>
+                            <p className="text-[10px] font-bold text-[var(--color-accent)]">{post.author.username || `@${post.author.name.toLowerCase().replace(/\s+/g, '_')}`}</p>
                             <span className="w-1 h-px bg-[var(--color-accent)]/30"></span>
+                            <p className="text-xs text-[var(--color-text)] opacity-40 font-mono capitalize">{post.timestamp}</p>
                         </div>
                     </div>
                 </NavLink>

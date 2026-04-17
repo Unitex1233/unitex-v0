@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { 
     Zap, 
     Gift, 
@@ -19,6 +19,9 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
+import { ref, onValue, set } from 'firebase/database';
+import { rtdb } from '@/lib/firebase';
 
 interface VaultItem {
     id: string;
@@ -124,7 +127,20 @@ const VAULT_ITEMS: VaultItem[] = [
 ];
 
 function Vault() {
-    const [vp, setVp] = useState(3260);
+    const { currentUser } = useAuth();
+    const [vp, setVp] = useState(0);
+
+    useEffect(() => {
+        if (!currentUser?.uid) return;
+        
+        const userRef = ref(rtdb, `users/${currentUser.uid}/vp`);
+        const unsubscribe = onValue(userRef, (snapshot) => {
+            const data = snapshot.val();
+            setVp(data || 0);
+        });
+        
+        return () => unsubscribe();
+    }, [currentUser]);
     const [activeTab, setActiveTab] = useState<'store' | 'instructions'>('store');
     const [activeCategory, setActiveCategory] = useState<'All' | VaultItem['category']>('All');
     const [items, setItems] = useState<VaultItem[]>(VAULT_ITEMS);
@@ -150,7 +166,9 @@ function Vault() {
             toast.error(`Insufficient points. You need ${item.cost - vp} more VP.`);
             return;
         }
-        setVp(prev => prev - item.cost);
+        if (currentUser?.uid) {
+            set(ref(rtdb, `users/${currentUser.uid}/vp`), vp - item.cost);
+        }
         setItems(prev => prev.map(i => i.id === item.id ? { ...i, status: 'Redeemed' } : i));
         toast.success(`Success! ${item.name} added to your inventory.`);
     };

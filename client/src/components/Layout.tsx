@@ -8,18 +8,9 @@ import { NotificationsList } from '@/pages/Notifications';
 
 function Layout() {
     // Mock State: In a real app, this comes from a context or API
-    const [hasUnread, setHasUnread] = useState(true);
+    const [hasUnread, setHasUnread] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
     const location = useLocation();
-
-    // Effect 1: Auto-pop out when "new notification arrives" (mocked on mount)
-    useEffect(() => {
-        if (hasUnread) {
-            // Simulate a delay as if a notification just arrived, or expand immediately on load
-            const timer = setTimeout(() => setIsExpanded(true), 800);
-            return () => clearTimeout(timer);
-        }
-    }, [hasUnread]);
 
     // Effect 2: Auto-collapse and mark as read when user navigates to Notifications
     // Since we are using Sheet now, we might want to clear unread when Sheet opens.

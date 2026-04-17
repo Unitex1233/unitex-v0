@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, Compass, Users, Calendar, Share2, Map, MessageSquare, Lock, Settings, User, Bell } from 'lucide-react';
+import { Home, Compass, Users, Calendar, Share2, Map, MessageSquare, Lock, Settings, User, Bell, Search as SearchIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { NotificationsList } from '@/pages/Notifications';
+import { useAuth } from '@/context/AuthContext';
 import { useNotifications } from '@/context/NotificationContext';
 import CreatePost from '@/components/CreatePost';
 import { PenSquare } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function Sidebar() {
+    const { userData } = useAuth();
     const { unreadCount } = useNotifications();
     const [isPostDialogOpen, setIsPostDialogOpen] = useState(false);
     const navItems = [
@@ -100,10 +102,14 @@ export function Sidebar() {
                 {/* Profile at the Bottom */}
                 <NavLink
                     to="/profile"
-                    className="w-10 h-10 rounded-none bg-[var(--color-surface)] overflow-hidden border border-[var(--color-text)] hover:ring-2 hover:ring-[var(--color-accent)] transition-all mt-2"
+                    className="w-10 h-10 rounded-none bg-[var(--color-surface)] overflow-hidden border border-[var(--color-text)] hover:ring-2 hover:ring-[var(--color-accent)] transition-all mt-2 flex items-center justify-center"
                     title="Profile"
                 >
-                    <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop" alt="Profile" className="w-full h-full object-cover" />
+                    {userData?.photoURL ? (
+                        <img src={userData.photoURL} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                        <User size={20} className="text-[var(--color-text)] opacity-40" />
+                    )}
                 </NavLink>
             </div>
         </aside>

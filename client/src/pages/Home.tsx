@@ -9,241 +9,39 @@ import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useNotifications } from '@/context/NotificationContext';
 import { useAuth } from '@/context/AuthContext';
-import { subscribeToPosts, createPost } from '@/lib/firestore';
+import { subscribeToRealtimePosts, createRealtimePost } from '@/lib/rtdb';
+import { calculateRankScore, calculateTrendingVelocity, generateNicheVector } from '@/lib/intelligence';
+import { getUser, updateUser, createNotification } from '@/lib/firestore';
+import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
-// Mock Data representing the "Progress First" Logic
-const SAMPLE_POSTS: Post[] = [
-    {
-        id: '1',
-        author: {
-            id: 'sarah-connor',
-            name: 'Dr. Sarah Connor',
-            role: 'Core Architect',
-            avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=100&auto=format&fit=crop'
-        },
-        timestamp: '2h ago',
-        content: "Just finalized the neural transition layer for the UniteX project. We're seeing a 40% reduction in latency across all edge nodes. The architectural shift from centralized to mesh-based state is truly paying off. #Engineering #Progress",
-        label: 'progress',
-        media: {
-            type: 'image',
-            url: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?q=80&w=1000&auto=format&fit=crop'
-        },
-        stats: { likes: 124, support: 45, comments: 12 }
-    },
-    {
-        id: 'r1',
-        author: {
-            id: 'tech-news-bot',
-            name: 'Tech News Bot',
-            role: 'Aggregator',
-            avatar: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?q=80&w=100&auto=format&fit=crop'
-        },
-        timestamp: '3h ago',
-        content: "Latest research on decentralized consensus suggests a move towards 'Wait-Free' data structures for even lower latency. Check out the full breakdown on X.",
-        label: 'resource',
-        source: {
-            platform: 'twitter',
-            url: 'https://twitter.com/unitex_dev/status/123456',
-            author: '@UniteX_Dev',
-            preview: {
-                title: 'Wait-Free Consensus in Meshed Networks',
-                description: 'How to achieve linearizability without locking in high-density transaction environments.',
-                image: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc51?q=80&w=800&auto=format&fit=crop'
-            }
-        },
-        stats: { likes: 89, support: 34, comments: 15 }
-    },
-    {
-        id: '2',
-        author: {
-            id: 'marcus-reed',
-            name: 'Marcus Reed',
-            role: 'Infrastructure Lead',
-            avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=100&auto=format&fit=crop'
-        },
-        timestamp: '5h ago',
-        content: "Total failure in the Shard-B simulation today. The consensus algorithm collapsed under high-density transactions. It's a setback, but we found a critical race condition. Back to the whiteboard tomorrow. #FailureStory #Learning",
-        label: 'failure',
-        stats: { likes: 89, support: 156, comments: 34 }
-    },
-    {
-        id: 'd1',
-        author: {
-            id: 'comm-mod',
-            name: 'Community Moderator',
-            role: 'Human-Node',
-            avatar: 'https://www.redditstatic.com/desktop2x/img/favicon/favicon-32x32.png'
-        },
-        timestamp: '6h ago',
-        content: "Discussion: Are we moving too fast with the mesh-sync implementation? Some nodes are reporting minor drift during peak hours. r/UniteX_Engine",
-        label: 'discussion',
-        source: {
-            platform: 'reddit',
-            url: 'https://reddit.com/r/UniteX_Engine/comments/drift',
-            author: 'r/UniteX_Engine',
-            preview: {
-                title: 'Mesh-Sync Drift Issues',
-                description: 'Reporting minor state drift in high-latency clusters. Seeking verification.',
-            }
-        },
-        stats: { likes: 234, support: 67, comments: 142 }
-    },
-    {
-        id: '3',
-        author: {
-            id: 'elena-fisher',
-            name: 'Elena Fisher',
-            role: 'UI Strategist',
-            avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=100&auto=format&fit=crop'
-        },
-        timestamp: '8h ago',
-        content: "Implemented the new high-density notification cards. Focus was on scanability and visceral feedback. The goal is to make the system feel 'alive' without being overwhelming. Check out the latest commit in the Vault. #Design #Success",
-        label: 'success',
-        media: {
-            type: 'image',
-            url: 'https://images.unsplash.com/photo-1581291518633-83b4ebd1d83e?q=80&w=1000&auto=format&fit=crop'
-        },
-        stats: { likes: 210, support: 67, comments: 28 }
-    },
-    {
-        id: 'q1',
-        author: {
-            id: 'alex-chen',
-            name: 'Alex Chen',
-            role: 'Frontend Dev',
-            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=100&auto=format&fit=crop'
-        },
-        timestamp: '10h ago',
-        content: "Question for the UI experts: How are you handling staggered animations on high-density grids without impacting the frame rate? Seeing some jank on lower-tier nodes.",
-        label: 'question',
-        stats: { likes: 45, support: 12, comments: 38 }
-    },
-    {
-        id: 'rf1',
-        author: {
-            id: 'jordan-smith',
-            name: 'Jordan Smith',
-            role: 'AI Scientist',
-            avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=100&auto=format&fit=crop'
-        },
-        timestamp: '12h ago',
-        content: "Reflection: The deeper we go into decentralized state sync, the more I realize that the bottleneck isn't the bandwidth, it's the consensus overhead. We need to rethink how we batch transactions at the edge.",
-        label: 'reflection',
-        stats: { likes: 156, support: 42, comments: 18 }
-    },
-    {
-        id: 's2',
-        author: {
-            id: 'kenji-tanaka',
-            name: 'Kenji Tanaka',
-            role: 'Product Lead',
-            avatar: 'https://images.unsplash.com/photo-1542909192-2f2241a99c9d?q=80&w=100&auto=format&fit=crop'
-        },
-        timestamp: '14h ago',
-        content: "We just hit 1M nodes on the beta-mesh! This is a massive milestone for the Alliance. Huge thanks to everyone who contributed to the stability over the last month. #Success #Growth",
-        label: 'success',
-        media: {
-            type: 'image',
-            url: 'https://images.unsplash.com/photo-1551434678-e076c223a692?q=80&w=1000&auto=format&fit=crop'
-        },
-        stats: { likes: 1240, support: 842, comments: 234 }
-    },
-    {
-        id: 'r2',
-        author: {
-            id: 'os-nexus',
-            name: 'Open Source Nexus',
-            role: 'Bot',
-            avatar: 'https://www.redditstatic.com/desktop2x/img/favicon/favicon-32x32.png'
-        },
-        timestamp: '16h ago',
-        content: "The latest 'State of Mesh' report is out on Reddit. A deep dive into regional performance and node health across the globe.",
-        label: 'resource',
-        source: {
-            platform: 'reddit',
-            url: 'https://reddit.com/r/UniteX_Engine/comments/state_report',
-            author: 'r/UniteX_Engine',
-            preview: {
-                title: 'State of the Mesh: Q4 Analysis',
-                description: 'Detailed metrics on node stability, latencies, and transaction throughput...',
-            }
-        },
-        stats: { likes: 342, support: 12, comments: 45 }
-    },
-    {
-        id: 'd2',
-        author: {
-            id: 'sasha-ivanov',
-            name: 'Sasha Ivanov',
-            role: 'Security Researcher',
-            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=100&auto=format&fit=crop'
-        },
-        timestamp: '18h ago',
-        content: "Discussion: What's the best way to handle 'Eclipse Attacks' in a mesh network without forcing centralization?",
-        label: 'discussion',
-        source: {
-            platform: 'twitter',
-            url: 'https://twitter.com/sasha_sec/status/789',
-            author: '@SashaSec',
-            preview: {
-                title: 'Eclipse Attack Mitigation Strategies',
-                description: 'A thread on decentralized reputation systems and peer-selection logic.',
-                image: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=800&auto=format&fit=crop'
-            }
-        },
-        stats: { likes: 567, support: 89, comments: 124 }
-    }
-];
 
-const FOLLOWING_POSTS: Post[] = [
-    {
-        id: 'f3',
-        author: {
-            id: 'reddit-nexus',
-            name: 'Reddit Nexus',
-            role: 'Forum Aggregator',
-            avatar: 'https://www.redditstatic.com/desktop2x/img/favicon/favicon-32x32.png'
-        },
-        timestamp: '1h ago',
-        content: "Discussion: What is the best way to handle global state in a decentralized mesh network? [r/UniteX_Engine]",
-        label: 'discussion',
-        source: {
-            platform: 'reddit',
-            url: 'https://reddit.com/r/UniteX_Engine/comments/abc',
-            author: 'r/UniteX_Engine',
-            preview: {
-                title: 'Global State Management Patterns',
-                description: 'We are seeing some drift in edge node synchronization during high load...',
-            }
-        },
-        stats: { likes: 456, support: 23, comments: 89 }
-    },
-    {
-        id: 'f1',
-        author: {
-            id: 'alex-chen',
-            name: 'Alex Chen',
-            role: 'Frontend Dev',
-            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=100&auto=format&fit=crop'
-        },
-        timestamp: '3h ago',
-        content: "Testing the new Framer Motion layout transitions. The stack is feeling incredibly fluid. #Development #UI",
-        label: 'progress',
-        stats: { likes: 45, support: 12, comments: 3 }
-    }
-];
 
 function Home() {
-    const { addNotification } = useNotifications();
     const { currentUser } = useAuth();
-    const [posts, setPosts] = useState<Post[]>(SAMPLE_POSTS);
+    const [posts, setPosts] = useState<Post[]>([]);
     const [activeSort, setActiveSort] = useState('new');
     const [feedType, setFeedType] = useState('for-you');
     const [isPostDialogOpen, setIsPostDialogOpen] = useState(false);
+    const [userData, setUserData] = useState<any>(null);
+    const navigate = useNavigate();
 
-    // Subscribe to live Firestore posts
     useEffect(() => {
-        const unsub = subscribeToPosts((livePosts) => {
+        if (currentUser) {
+            getUser(currentUser.uid).then((data: any) => {
+                if (data) {
+                    setUserData(data);
+                    if (data.onboardingCompleted === false || data.hasSeenCredentials === false) {
+                        navigate('/onboarding');
+                    }
+                }
+            });
+        }
+    }, [currentUser, navigate]);
+
+    // Subscribe to live Realtime Database posts
+    useEffect(() => {
+        const unsub = subscribeToRealtimePosts((livePosts) => {
             if (livePosts.length > 0) {
                 setPosts(livePosts as Post[]);
             }
@@ -251,21 +49,70 @@ function Home() {
         return () => unsub();
     }, []);
 
+    // Simulated User Niche Vector for the Relevance Engine
+    const userVector = React.useMemo(() => generateNicheVector(['Frontend', 'React', 'AI/ML']), []);
+
+    // Apply 12-Layer Algorithmic Sorting 
+    const sortedPosts = React.useMemo(() => {
+        const now = Date.now();
+        let postsToSort = [...posts];
+
+        if (activeSort === 'hot') {
+            // Apply Trending Velocity Algorithm
+            postsToSort.sort((a, b) => {
+                const velA = calculateTrendingVelocity(
+                    { postNicheVector: a.ai?.tags ? generateNicheVector(a.ai.tags) : [], qScore: a.ai?.qualityScore || 50, interactions: a.stats, authorVp: 100, createdAtMillis: a.createdAtMillis || now },
+                    { likes: Math.floor(a.stats.likes / 2), comments: Math.floor(a.stats.comments / 2), shares: 0 },
+                    now
+                );
+                const velB = calculateTrendingVelocity(
+                    { postNicheVector: b.ai?.tags ? generateNicheVector(b.ai.tags) : [], qScore: b.ai?.qualityScore || 50, interactions: b.stats, authorVp: 100, createdAtMillis: b.createdAtMillis || now },
+                    { likes: Math.floor(b.stats.likes / 2), comments: Math.floor(b.stats.comments / 2), shares: 0 },
+                    now
+                );
+                return velB - velA;
+            });
+        } else if (activeSort === 'top') {
+            // Apply 'For You' Relevance Algorithm
+            postsToSort.sort((a, b) => {
+                const rankA = calculateRankScore(
+                    userVector,
+                    { postNicheVector: a.ai?.tags ? generateNicheVector(a.ai.tags) : [], qScore: a.ai?.qualityScore || 50, interactions: a.stats, authorVp: 500, createdAtMillis: a.createdAtMillis || now },
+                    now
+                );
+                const rankB = calculateRankScore(
+                    userVector,
+                    { postNicheVector: b.ai?.tags ? generateNicheVector(b.ai.tags) : [], qScore: b.ai?.qualityScore || 50, interactions: b.stats, authorVp: 500, createdAtMillis: b.createdAtMillis || now },
+                    now
+                );
+                return rankB - rankA;
+            });
+        }
+        // 'new' relies on the default order returned by subscribeToRealtimePosts
+        
+        return postsToSort;
+    }, [posts, activeSort, userVector]);
+
     const handleCreatePost = async (content: string, label: string | null, media?: CreatePostMedia) => {
         setIsPostDialogOpen(false);
         try {
-            await createPost({
+            await createRealtimePost({
                 uid: currentUser?.uid || 'anonymous',
-                displayName: currentUser?.displayName || 'Anonymous',
-                photoURL: currentUser?.photoURL || '',
+                displayName: userData?.displayName || currentUser?.displayName || 'Anonymous',
+                photoURL: userData?.photoURL || currentUser?.photoURL || '',
                 role: 'Member',
                 content,
-                label: label || undefined,
+                mediaURL: media ? media.url : undefined,
             });
-            addNotification({
+            await createNotification({
+                recipientUid: currentUser?.uid || 'anonymous',
+                senderUid: 'system',
+                senderName: 'UniteX Intelligence',
                 type: 'system',
-                content: `Your post has been synchronized to the network.`,
+                content: `Your post has been analyzed and routed to the network.`,
+                actionUrl: '/'
             });
+            toast.success("Post published successfully");
         } catch (err) {
             console.error('Failed to create post:', err);
             // Optimistic fallback
@@ -273,15 +120,15 @@ function Home() {
                 id: Date.now().toString(),
                 author: {
                     id: currentUser?.uid || 'anon',
-                    name: currentUser?.displayName || 'Anonymous',
+                    name: userData?.displayName || currentUser?.displayName || 'Anonymous',
                     role: 'Member',
-                    avatar: currentUser?.photoURL || ''
+                    avatar: userData?.photoURL || currentUser?.photoURL || ''
                 },
                 timestamp: 'Just now',
                 content,
                 label: label ? (label as Post['label']) : undefined,
                 media: media ? { type: media.type, url: media.url } : undefined,
-                stats: { likes: 0, support: 0, comments: 0 }
+                stats: { likes: 0, support: 0, comments: 0, shares: 0 }
             };
             setPosts(prev => [newPost, ...prev]);
         }
@@ -365,8 +212,8 @@ function Home() {
                 <div className="bg-white border border-[var(--color-surface)] p-4 flex flex-col gap-4 shadow-sm rounded-none">
                     <div className="flex gap-4">
                         <Avatar className="h-10 w-10 border border-gray-100 rounded-none shrink-0 cursor-pointer hover:opacity-80 transition-opacity">
-                            <AvatarImage src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop" />
-                            <AvatarFallback>U</AvatarFallback>
+                            <AvatarImage src={userData?.photoURL || currentUser?.photoURL || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop"} />
+                            <AvatarFallback>{(userData?.displayName || currentUser?.displayName || 'U').charAt(0).toUpperCase()}</AvatarFallback>
                         </Avatar>
                         <Dialog open={isPostDialogOpen} onOpenChange={setIsPostDialogOpen}>
                             <DialogTrigger asChild>
@@ -420,16 +267,10 @@ function Home() {
 
                     {/* Feed Content */}
                     <div className="flex flex-col gap-2">
-                        {(feedType === 'for-you' ? posts : FOLLOWING_POSTS).map((post) => (
+                        {(feedType === 'for-you' ? sortedPosts : []).map((post) => (
                             <PostCard key={post.id} post={post} />
                         ))}
 
-                        {/* End of Feed Sentinel */}
-                        <div className="py-8 flex flex-col items-center justify-center border-t border-[var(--color-surface)] mt-4">
-                            <Zap size={32} className="text-gray-100 mb-4" />
-                            <p className="text-xs font-mono text-gray-400 capitalize tracking-wider">End of transmission.</p>
-                            <button className="mt-4 text-xs font-bold text-[var(--color-accent)] capitalize tracking-tight hover:underline">Return to top</button>
-                        </div>
                     </div>
                 </div>
             </main>
@@ -508,15 +349,8 @@ function Home() {
                     <button className="w-full mt-6 py-2 text-xs font-bold capitalize tracking-wider text-gray-400 hover:text-[var(--color-text)] hover:bg-gray-50 transition-colors border border-gray-100 rounded-none">Browse all alliances</button>
                 </div>
 
-                <div className="mt-auto pt-6 border-t border-[var(--color-surface)] opacity-70">
-                    <div className="flex flex-wrap gap-x-4 gap-y-2 mb-4">
-                        {['About', 'Help', 'Terms', 'Privacy', 'Nodes'].map((link) => (
-                            <a key={link} href="#" className="text-[11px] font-bold text-gray-400 capitalize tracking-tight hover:text-[var(--color-accent)] transition-colors">{link}</a>
-                        ))}
-                    </div>
-                    <div className="text-[10px] font-mono text-gray-300 capitalize tracking-wider">© 2024 UniteX network</div>
-                </div>
             </aside>
+
         </div>
     );
 }

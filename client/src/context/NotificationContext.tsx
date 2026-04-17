@@ -1,8 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useAuth } from './AuthContext';
+import { subscribeToNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '@/lib/firestore';
 
 interface Notification {
-    id: number;
-    type: 'like' | 'follow' | 'comment' | 'support' | 'system';
+    id: string; // Changed from number to string to match Firestore IDs
+    type: 'like' | 'follow' | 'comment' | 'support' | 'system' | 'connection_accepted';
     user?: string;
     content: string;
     time: string;
@@ -12,53 +14,49 @@ interface Notification {
 interface NotificationContextType {
     notifications: Notification[];
     unreadCount: number;
-    addNotification: (notification: Omit<Notification, 'id' | 'time' | 'read'>) => void;
     markAllAsRead: () => void;
-    markAsRead: (id: number) => void;
+    markAsRead: (id: string) => void;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    // Initial state: try to load from localStorage first
-    const [notifications, setNotifications] = useState<Notification[]>(() => {
-        const saved = localStorage.getItem('unitex_notifications');
-        if (saved) {
-            try {
-                return JSON.parse(saved);
-            } catch (e) {
-                console.error("Failed to parse notifications", e);
-            }
-        }
-        return [
-            { id: 1, type: 'like', user: 'Sarah Jenkins', content: 'liked your progress update', time: '2m ago', read: false },
-            { id: 2, type: 'follow', user: 'Alex Chen', content: 'started following you', time: '1h ago', read: true },
-        ];
-    });
+    const { currentUser } = useAuth();
+    const [notifications, setNotifications] = useState<Notification[]>([]);
 
-    // Save to localStorage whenever notifications change
     useEffect(() => {
-        localStorage.setItem('unitex_notifications', JSON.stringify(notifications));
-    }, [notifications]);
+        if (!currentUser) {
+            setNotifications([]);
+            return;
+        }
+
+        const unsubscribe = subscribeToNotifications(currentUser.uid, (notifs) => {
+            // Map Firestore data to our Notification interface
+            const formatted = notifs.map(n => ({
+                id: n.id,
+                type: n.type || 'system',
+                user: n.senderName || 'System',
+                content: n.text || n.content,
+                time: n.createdAt ? new Date(n.createdAt.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
+                read: n.read || false
+            })) as Notification[];
+            setNotifications(formatted);
+        });
+
+        return () => unsubscribe();
+    }, [currentUser]);
 
     const unreadCount = notifications.filter(n => !n.read).length;
 
-    const addNotification = (notif: Omit<Notification, 'id' | 'time' | 'read'>) => {
-        const newNotif: Notification = {
-            ...notif,
-            id: Date.now(),
-            time: 'Just now',
-            read: false,
-        };
-        setNotifications(prev => [newNotif, ...prev]);
+
+
+    const markAllAsRead = async () => {
+        if (!currentUser) return;
+        await markAllNotificationsAsRead(currentUser.uid);
     };
 
-    const markAllAsRead = () => {
-        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-    };
-
-    const markAsRead = (id: number) => {
-        setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    const markAsRead = async (id: string) => {
+        await markNotificationAsRead(id);
     };
 
     // Simulation removed as per user request to avoid unnecessary notifications.
@@ -68,7 +66,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }, []);
 
     return (
-        <NotificationContext.Provider value={{ notifications, unreadCount, addNotification, markAllAsRead, markAsRead }}>
+        <NotificationContext.Provider value={{ notifications, unreadCount, markAllAsRead, markAsRead }}>
             {children}
         </NotificationContext.Provider>
     );

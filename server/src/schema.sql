@@ -72,12 +72,45 @@ CREATE TABLE IF NOT EXISTS user_roadmaps (
 );
 
 -- Networking / Connections
-CREATE TABLE IF NOT EXISTS connections (
-  requester_id INTEGER REFERENCES users(id),
-  receiver_id INTEGER REFERENCES users(id),
+CREATE TABLE IF NOT EXISTS connection_requests (
+  id SERIAL PRIMARY KEY,
+  sender_id VARCHAR(128) NOT NULL,
+  receiver_id VARCHAR(128) NOT NULL,
   status VARCHAR(20) DEFAULT 'pending', -- pending, accepted, rejected
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (requester_id, receiver_id)
+  UNIQUE(sender_id, receiver_id)
+);
+
+CREATE TABLE IF NOT EXISTS connections (
+  user1_id VARCHAR(128) NOT NULL,
+  user2_id VARCHAR(128) NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (user1_id, user2_id)
+);
+
+-- Rewards & Activity (VP/EXP)
+CREATE TABLE IF NOT EXISTS user_points (
+  uid VARCHAR(128) PRIMARY KEY,
+  exp INTEGER DEFAULT 0,
+  vp INTEGER DEFAULT 0,
+  last_updated TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS activity_logs (
+  id SERIAL PRIMARY KEY,
+  uid VARCHAR(128) NOT NULL,
+  action VARCHAR(50) NOT NULL,
+  exp_gained INTEGER DEFAULT 0,
+  vp_gained INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS referrals (
+  id SERIAL PRIMARY KEY,
+  referrer_uid VARCHAR(128) NOT NULL,
+  referred_uid VARCHAR(128) NOT NULL UNIQUE,
+  status VARCHAR(20) DEFAULT 'completed',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Initial Data

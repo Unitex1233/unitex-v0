@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Calendar as CalendarIcon, MapPin, Users, Filter, Plus, X, Sparkles, CheckCircle } from 'lucide-react';
 import { DatePicker } from '../components/ui/date-picker';
 import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle, DialogDescription } from '../components/ui/dialog';
@@ -11,83 +11,133 @@ import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
 import { Button } from '../components/ui/button';
 import { Link } from 'react-router-dom';
-import { MOCK_EVENTS } from '@/utils/mockData';
+import { useAuth } from '@/context/AuthContext';
+import { subscribeToEvents, createEvent, rsvpEvent } from '@/lib/firestore';
+import { toast } from 'sonner';
 
 function Events() {
+    const { currentUser } = useAuth();
+    const [events, setEvents] = useState<any[]>([]);
+    const [rsvpedEvents, setRsvpedEvents] = useState<string[]>([]);
     const [createEventOpen, setCreateEventOpen] = useState(false);
     const [newEventDate, setNewEventDate] = useState<Date | undefined>(new Date());
-    const [rsvpedEvents, setRsvpedEvents] = useState<number[]>([1, 4]);
     const isDesktop = useMediaQuery("(min-width: 768px)");
 
     // Registration form state
     const [registerDialogOpen, setRegisterDialogOpen] = useState(false);
-    const [registerEventId, setRegisterEventId] = useState<number | null>(null);
+    const [registerEventId, setRegisterEventId] = useState<string | null>(null);
     const [regName, setRegName] = useState('');
     const [regEmail, setRegEmail] = useState('');
     const [regSeats, setRegSeats] = useState('1');
     const [regSuccess, setRegSuccess] = useState(false);
 
-    const openRegisterDialog = (eventId: number) => {
+    useEffect(() => {
+        const unsub = subscribeToEvents((data) => {
+            setEvents(data);
+        });
+        return () => unsub();
+    }, []);
+
+    const openRegisterDialog = (eventId: string) => {
         setRegisterEventId(eventId);
-        setRegName('');
-        setRegEmail('');
+        setRegName(currentUser?.displayName || '');
+        setRegEmail(currentUser?.email || '');
         setRegSeats('1');
         setRegSuccess(false);
         setRegisterDialogOpen(true);
     };
 
-    const handleRegister = () => {
-        if (!regName.trim() || !regEmail.trim()) return;
+    const handleRegister = async () => {
+        if (!regName.trim() || !regEmail.trim() || !currentUser) return;
         if (registerEventId !== null) {
-            setRsvpedEvents(prev => [...prev, registerEventId]);
-            setRegSuccess(true);
-            setTimeout(() => {
-                setRegisterDialogOpen(false);
-                setRegSuccess(false);
-            }, 2000);
+            try {
+                await rsvpEvent(registerEventId, currentUser.uid);
+                setRsvpedEvents(prev => [...prev, registerEventId]);
+                setRegSuccess(true);
+                setTimeout(() => {
+                    setRegisterDialogOpen(false);
+                    setRegSuccess(false);
+                }, 2000);
+            } catch (err) {
+                toast.error("Failed to register for event");
+            }
         }
     };
 
-    const handleUnregister = (id: number) => {
+    const handleUnregister = (id: string) => {
         setRsvpedEvents(prev => prev.filter(item => item !== id));
+        toast.success("Registration cancelled (Local preview)");
     };
 
-    const registeringEvent = MOCK_EVENTS.find(e => e.id === registerEventId);
-
-    const initialEvents = MOCK_EVENTS;
+    const registeringEvent = events.find(e => e.id === registerEventId);
 
     // Shared Form Component
-    const EventForm = ({ className }: { className?: string }) => (
-        <FieldGroup className={cn("p-4 md:p-0", className)}>
-            <Field>
-                <FieldLabel>Event Title</FieldLabel>
-                <Input placeholder="e.g. React Pattern Deep Dive" />
-                <FieldDescription>Choose a catchy title for your event.</FieldDescription>
-            </Field>
+    const EventForm = ({ className }: { className?: string }) => {
+        const [title, setTitle] = useState('');
+        const [time, setTime] = useState('');
+        const [desc, setDesc] = useState('');
+        const [loading, setLoading] = useState(false);
 
-            <div className="grid grid-cols-2 gap-4">
+        const handleCreate = async () => {
+            if (!title || !desc || !time || !newEventDate || !currentUser) return;
+            setLoading(true);
+            try {
+                await createEvent({
+                    title,
+                    description: desc,
+                    date: newEventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                    time,
+                    mode: 'Remote',
+                    community: currentUser.displayName || 'UniteX Community',
+                    hostUid: currentUser.uid
+                });
+                toast.success("Event created!");
+                setCreateEventOpen(false);
+                setTitle('');
+                setDesc('');
+                setTime('');
+            } catch (err) {
+                toast.error("Error creating event");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        return (
+            <FieldGroup className={cn("p-4 md:p-0", className)}>
                 <Field>
-                    <FieldLabel>Date</FieldLabel>
-                    {/* DatePicker is compatible as it accepts className */}
-                    <DatePicker date={newEventDate} setDate={setNewEventDate} className="w-full" />
+                    <FieldLabel>Event Title</FieldLabel>
+                    <Input placeholder="e.g. React Pattern Deep Dive" value={title} onChange={e => setTitle(e.target.value)} />
+                    <FieldDescription>Choose a catchy title for your event.</FieldDescription>
                 </Field>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <Field>
+                        <FieldLabel>Date</FieldLabel>
+                        <DatePicker date={newEventDate} setDate={setNewEventDate} className="w-full" />
+                    </Field>
+                    <Field>
+                        <FieldLabel>Time</FieldLabel>
+                        <Input placeholder="6:00 PM EST" value={time} onChange={e => setTime(e.target.value)} />
+                    </Field>
+                </div>
+
                 <Field>
-                    <FieldLabel>Time</FieldLabel>
-                    <Input placeholder="6:00 PM EST" />
+                    <FieldLabel>Description</FieldLabel>
+                    <Textarea placeholder="Describe what attendees can expect..." className="h-24" value={desc} onChange={e => setDesc(e.target.value)} />
+                    <FieldDescription>Markdown is supported.</FieldDescription>
                 </Field>
-            </div>
 
-            <Field>
-                <FieldLabel>Description</FieldLabel>
-                <Textarea placeholder="Describe what attendees can expect..." className="h-24" />
-                <FieldDescription>Markdown is supported.</FieldDescription>
-            </Field>
-
-            <Button className="w-full bg-[var(--color-accent)] text-white font-bold uppercase tracking-widest hover:opacity-90 transition-opacity rounded-none mt-2">
-                Publish Event
-            </Button>
-        </FieldGroup>
-    );
+                <Button 
+                    onClick={handleCreate} 
+                    disabled={loading || !title || !desc || !time}
+                    className="w-full bg-[var(--color-accent)] text-white font-bold uppercase tracking-widest hover:opacity-90 transition-opacity rounded-none mt-2"
+                >
+                    {loading ? "Publishing..." : "Publish Event"}
+                </Button>
+            </FieldGroup>
+        );
+    };
 
     return (
         <div className="pt-4 pb-10 max-w-7xl mx-auto px-4 md:px-8">
@@ -165,15 +215,15 @@ function Events() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
                 {/* Events List */}
                 <div className="lg:col-span-9 flex flex-col gap-2">
-                    {initialEvents.length > 0 ? (
-                        initialEvents.map((event) => (
+                    {events.length > 0 ? (
+                        events.map((event) => (
                             <div key={event.id} className="group relative">
                                 <Link to={`/events/${event.id}`} className="flex flex-col sm:flex-row bg-white border border-[var(--color-surface)] overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 mb-2 rounded-none">
                                     {/* Date Badge */}
                                     <div className="sm:w-32 bg-gray-50 flex flex-row sm:flex-col items-center justify-between sm:justify-center p-2 border-b sm:border-b-0 sm:border-r border-[var(--color-surface)] group-hover:bg-[var(--color-surface)] transition-colors">
                                         <div className="flex flex-col items-center">
-                                            <span className="text-4xl font-bold tracking-tight leading-none text-[var(--color-text)]">{event.date.split(' ')[1].replace(',', '')}</span>
-                                            <span className="text-[10px] uppercase tracking-widest font-bold mt-2 text-gray-400">{event.date.split(' ')[0]}</span>
+                                            <span className="text-4xl font-bold tracking-tight leading-none text-[var(--color-text)]">{event.date?.split(' ')[1]?.replace(',', '') || '??'}</span>
+                                            <span className="text-[10px] uppercase tracking-widest font-bold mt-2 text-gray-400">{event.date?.split(' ')[0] || 'TBD'}</span>
                                         </div>
                                         <span className="sm:hidden text-xs font-bold uppercase tracking-widest text-[var(--color-text)]">{event.time}</span>
                                     </div>
@@ -191,7 +241,7 @@ function Events() {
 
                                         <div className="flex justify-between items-center border-t border-[var(--color-surface)] pt-4 mt-auto">
                                             <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest opacity-60">
-                                                <Users size={16} className="text-[var(--color-accent)]" /> {event.attendees} Registered
+                                                <Users size={16} className="text-[var(--color-accent)]" /> {event.attendees || 0} Registered
                                             </div>
                                             <button
                                                 onClick={(e) => {

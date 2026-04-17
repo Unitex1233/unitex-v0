@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User as UserIcon, Mail, Shield, Zap, ArrowRight, Github, Twitter, Linkedin, Globe, Settings, ChevronDown, CreditCard, Bell, LogOut, Heart, MessageSquare, Pin, Star, BookOpen, ExternalLink, Copy, Users, LayoutGrid, Flame, Smartphone, Laptop, Monitor } from 'lucide-react';
+import { User as UserIcon, Mail, Shield, Zap, ArrowRight, Github, Twitter, Linkedin, Globe, Settings, ChevronDown, CreditCard, Bell, LogOut, Heart, MessageSquare, Pin, Star, BookOpen, ExternalLink, Copy, Users, LayoutGrid, Flame, Smartphone, Laptop, Monitor, Fingerprint } from 'lucide-react';
 import PostCard, { Post } from '@/components/PostCard';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
@@ -10,11 +10,24 @@ import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 
+import { getUser } from '@/lib/firestore';
+import { calculateUserLevel } from '@/lib/intelligence';
+
 function Profile() {
     const { currentUser, signOut } = useAuth();
     const [activeSection, setActiveSection] = useState('Posts');
     const [userPosts, setUserPosts] = useState<Post[]>([]);
+    const [userData, setUserData] = useState<any>(null);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const fetchUserData = async () => {
+            if (!currentUser) return;
+            const data = await getUser(currentUser.uid);
+            setUserData(data);
+        };
+        fetchUserData();
+    }, [currentUser]);
 
     useEffect(() => {
         if (!currentUser) return;
@@ -63,19 +76,23 @@ function Profile() {
                 <div className="px-8 -mt-12 mb-2 flex flex-col md:flex-row justify-between items-end gap-4 text-[var(--color-text)]">
                     <div className="flex flex-col md:flex-row items-end gap-6">
                         <div className="w-32 h-32 border-4 border-white shadow-lg bg-white overflow-hidden relative rounded-none">
-                            <img src={currentUser?.photoURL || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=400&auto=format&fit=crop"} className="w-full h-full object-cover" alt="Profile" />
+                            <img src={userData?.photoURL || currentUser?.photoURL || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=400&auto=format&fit=crop"} className="w-full h-full object-cover" alt="Profile" />
                         </div>
                         <div className="pb-2">
-                            <div className="flex items-center gap-3 mb-1">
-                                <h1 className="text-3xl font-bold tracking-tight text-[var(--color-text)] leading-tight">{currentUser?.displayName || 'User'}</h1>
-                                <div className="px-2 py-0.5 bg-[var(--color-surface)] text-[var(--color-text)] text-[9px] font-bold uppercase tracking-widest border border-[var(--color-surface)] rounded-none">
-                                    PRO MEMBER
-                                </div>
+                            <div className="flex flex-wrap items-center gap-3 mb-1">
+                                <h1 className="text-3xl font-bold tracking-tight text-[var(--color-text)] leading-tight truncate max-w-[200px] md:max-w-xs" title={userData?.displayName || currentUser?.displayName || 'User'}>{userData?.displayName || currentUser?.displayName || 'User'}</h1>
+                                {userData?.xp !== undefined && (
+                                    <div className="px-2 py-0.5 bg-indigo-50 text-indigo-600 text-[9px] font-bold uppercase tracking-widest border border-indigo-100 rounded-none shrink-0 flex items-center gap-1">
+                                        <Zap size={10} /> LEVEL {calculateUserLevel(userData.xp).level}
+                                    </div>
+                                )}
                             </div>
-                            <div className="flex items-center gap-2 mb-2">
-                                <p className="text-xs text-gray-400 font-medium">Product Designer @ UniteX</p>
+                            <div className="flex flex-wrap items-center gap-2 mb-2">
+                                <p className="text-xs text-gray-400 font-medium">{userData?.bio || "Node initialized."}</p>
                                 <span className="w-1 h-1 bg-gray-300 rounded-none" />
-                                <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest text-[#6366f1]">Elite Architect</span>
+                                <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest text-[#6366f1]">
+                                    {userData?.xp !== undefined ? `${userData.xp} EXP • ${userData.vp} VP` : "Architect"}
+                                </span>
                             </div>
                             <div className="flex items-center gap-6">
                                 <div className="flex items-center gap-4">
@@ -86,11 +103,11 @@ function Profile() {
                                 <div className="h-4 w-px bg-gray-100" />
                                 <div className="flex items-center gap-6">
                                     <div className="flex items-center gap-2">
-                                        <span className="text-sm font-bold text-[var(--color-text)]">0</span>
-                                        <span className="text-[9px] font-medium text-gray-400 uppercase tracking-widest">Followers</span>
+                                        <span className="text-sm font-bold text-[var(--color-text)]">{userData?.connectionsCount || userData?.followers || 0}</span>
+                                        <span className="text-[9px] font-medium text-gray-400 uppercase tracking-widest">Connections</span>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-sm font-bold text-[var(--color-text)]">0</span>
+                                        <span className="text-sm font-bold text-[var(--color-text)]">{userData?.following || 0}</span>
                                         <span className="text-[9px] font-medium text-gray-400 uppercase tracking-widest">Following</span>
                                     </div>
                                     <div className="h-4 w-px bg-gray-100" />
@@ -121,9 +138,14 @@ function Profile() {
                         </Button>
                         <NavLink to="/networking">
                             <Button
-                                className="bg-[var(--color-text)] hover:bg-[var(--color-accent)] text-white hover:text-white border-0 font-semibold text-xs py-5 px-6 transition-all shadow-sm rounded-none"
+                                className="bg-[var(--color-text)] hover:bg-[var(--color-accent)] text-white hover:text-white border-0 font-semibold text-xs py-5 px-6 transition-all shadow-sm rounded-none relative"
                             >
                                 <Users size={14} className="mr-2" /> My Network
+                                {userData?.pendingRequests > 0 && (
+                                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full shadow-sm">
+                                        {userData.pendingRequests}
+                                    </span>
+                                )}
                             </Button>
                         </NavLink>
                     </div>

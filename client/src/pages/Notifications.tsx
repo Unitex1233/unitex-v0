@@ -112,6 +112,7 @@ export function NotificationsList({ isSheet = false }: { isSheet?: boolean }) {
                                         }`}>
                                         {notif.type === 'like' && <Heart size={14} strokeWidth={2.5} />}
                                         {notif.type === 'follow' && <UserPlus size={14} strokeWidth={2.5} />}
+                                        {notif.type === 'connection_accepted' && <UserPlus size={14} strokeWidth={2.5} />}
                                         {notif.type === 'comment' && <MessageSquare size={14} strokeWidth={2.5} />}
                                         {notif.type === 'support' && <HeartHandshake size={14} strokeWidth={2.5} />}
                                         {notif.type === 'system' && <Bell size={14} strokeWidth={2.5} />}
@@ -155,6 +156,7 @@ export function NotificationsList({ isSheet = false }: { isSheet?: boolean }) {
                                         {notif.type === 'support' && <HeartHandshake size={14} strokeWidth={2.5} />}
                                         {notif.type === 'like' && <Heart size={14} strokeWidth={2.5} />}
                                         {notif.type === 'follow' && <UserPlus size={14} strokeWidth={2.5} />}
+                                        {notif.type === 'connection_accepted' && <UserPlus size={14} strokeWidth={2.5} />}
                                         {notif.type === 'system' && <Bell size={14} strokeWidth={2.5} />}
                                     </div>
 

@@ -17,6 +17,7 @@ import OtherProfile from '@/pages/OtherProfile';
 import EventDetail from '@/pages/EventDetail';
 import DiscoverDetail from '@/pages/DiscoverDetail';
 import Login from './pages/Login';
+import { Onboarding } from '@/pages/Onboarding';
 import { NotificationProvider } from './context/NotificationContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Toaster } from 'sonner';
@@ -31,6 +32,7 @@ function AppRoutes() {
     return (
         <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
             <Route
                 path="/"
                 element={
