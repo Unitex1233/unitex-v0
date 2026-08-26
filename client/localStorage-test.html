@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>localStorage Test - UniteX MVP</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .card { background: white; padding: 20px; margin: 15px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        h1 { color: #333; border-bottom: 2px solid #0070f3; padding-bottom: 10px; }
+        h2 { color: #0070f3; margin-top: 20px; }
+        button { background: #0070f3; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin: 5px 5px 5px 0; }
+        button:hover { background: #0051cc; }
+        input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin: 5px 5px 5px 0; }
+        .output { background: #f0f0f0; padding: 15px; border-radius: 4px; font-family: monospace; white-space: pre-wrap; word-break: break-all; margin: 10px 0; max-height: 300px; overflow-y: auto; }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .info { color: #0070f3; }
+        label { display: block; margin-top: 10px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 UniteX MVP - localStorage Persistence Test</h1>
+        
+        <div class="card">
+            <h2>Sign Up / Login Test</h2>
+            <label>Email:</label>
+            <input type="email" id="email" placeholder="user@example.com" value="test@unitex.local">
+            
+            <label>Display Name:</label>
+            <input type="text" id="displayName" placeholder="Your Name" value="Test User">
+            
+            <label>Password:</label>
+            <input type="password" id="password" placeholder="••••••••" value="password123">
+            
+            <button onclick="testSignUp()">📝 Test Sign Up (localStorage)</button>
+            <button onclick="testLogin()">🔑 Test Login (localStorage)</button>
+            <button onclick="testPhoneAuth()">📱 Test Phone Auth (localStorage)</button>
+            <button onclick="testGuestAuth()">👥 Test Guest Auth (localStorage)</button>
+            
+            <div class="output" id="authOutput"></div>
+        </div>
+
+        <div class="card">
+            <h2>Check Persisted Data</h2>
+            <button onclick="showAllStorage()">📊 Show All localStorage</button>
+            <button onclick="showUserData()">👤 Show User Data</button>
+            <button onclick="showAuthData()">🔐 Show Auth Data</button>
+            <button onclick="clearAllStorage()">🗑️ Clear All Storage</button>
+            
+            <div class="output" id="storageOutput"></div>
+        </div>
+
+        <div class="card">
+            <h2>Content Persistence Test</h2>
+            <label>Post Content:</label>
+            <textarea id="postContent" style="width: 100%; height: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">Check out this amazing Web3 event! 🚀</textarea>
+            
+            <button onclick="savePost()">💾 Save Post to localStorage</button>
+            <button onclick="getPosts()">📬 Get All Posts</button>
+            <button onclick="clearPosts()">🗑️ Clear Posts</button>
+            
+            <div class="output" id="postsOutput"></div>
+        </div>
+
+        <div class="card">
+            <h2>Events & Discover Data</h2>
+            <button onclick="testEvents()">📅 Fetch Events from Server</button>
+            <button onclick="testDiscover()">🔍 Fetch Discover from Server</button>
+            <button onclick="testTrending()">🔥 Fetch Trending from Server</button>
+            
+            <div class="output" id="dataOutput"></div>
+        </div>
+    </div>
+
+    <script>
+        const log = (msg, type = 'info') => {
+            const output = document.getElementById('authOutput') || document.getElementById('storageOutput') || document.getElementById('dataOutput');
+            if (output) {
+                const timestamp = new Date().toLocaleTimeString();
+                const className = type === 'success' ? 'success' : type === 'error' ? 'error' : 'info';
+                output.innerHTML += `<span class="${className}">[${timestamp}] ${msg}</span>\n`;
+                output.scrollTop = output.scrollHeight;
+            }
+        };
+
+        async function testSignUp() {
+            const email = document.getElementById('email').value;
+            const displayName = document.getElementById('displayName').value;
+            const password = document.getElementById('password').value;
+            
+            document.getElementById('authOutput').innerHTML = '';
+            log('📝 Testing Sign Up...', 'info');
+
+            const user = {
+                uid: 'local-' + Date.now(),
+                email,
+                displayName,
+                photoURL: '',
+                createdAt: new Date().toISOString()
+            };
+
+            try {
+                localStorage.setItem('unitex_user', JSON.stringify(user));
+                localStorage.setItem('unitex_auth_data', JSON.stringify({
+                    method: 'email',
+                    email,
+                    signUpAt: new Date().toISOString()
+                }));
+                localStorage.setItem('unitex_pwd_hash', btoa(password));
+                
+                log(`✅ Sign Up Successful!`, 'success');
+                log(`UID: ${user.uid}`, 'success');
+                log(`Email: ${email}`, 'success');
+                log(`Display Name: ${displayName}`, 'success');
+                log(`Created At: ${user.createdAt}`, 'success');
+            } catch (e) {
+                log(`❌ Error: ${e.message}`, 'error');
+            }
+        }
+
+        async function testLogin() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            document.getElementById('authOutput').innerHTML = '';
+            log('🔑 Testing Login...', 'info');
+
+            const user = {
+                uid: 'local-' + Date.now(),
+                email,
+                displayName: 'Logged In User',
+                photoURL: '',
+                createdAt: new Date().toISOString()
+            };
+
+            try {
+                localStorage.setItem('unitex_user', JSON.stringify(user));
+                localStorage.setItem('unitex_auth_data', JSON.stringify({
+                    method: 'email',
+                    email,
+                    signInAt: new Date().toISOString()
+                }));
+                localStorage.setItem('unitex_pwd_hash', btoa(password));
+                
+                log(`✅ Login Successful!`, 'success');
+                log(`UID: ${user.uid}`, 'success');
+                log(`Email: ${email}`, 'success');
+                log(`Credentials persisted in localStorage`, 'success');
+            } catch (e) {
+                log(`❌ Error: ${e.message}`, 'error');
+            }
+        }
+
+        async function testPhoneAuth() {
+            document.getElementById('authOutput').innerHTML = '';
+            log('📱 Testing Phone Auth...', 'info');
+
+            const user = {
+                uid: 'local-' + Date.now(),
+                phone: '+1234567890',
+                displayName: 'Phone User',
+                email: `phone-${Date.now()}@unitex.local`,
+                createdAt: new Date().toISOString()
+            };
+
+            try {
+                localStorage.setItem('unitex_user', JSON.stringify(user));
+                localStorage.setItem('unitex_auth_data', JSON.stringify({
+                    method: 'phone',
+                    phone: user.phone,
+                    signInAt: new Date().toISOString()
+                }));
+                
+                log(`✅ Phone Auth Successful!`, 'success');
+                log(`UID: ${user.uid}`, 'success');
+                log(`Phone: ${user.phone}`, 'success');
+                log(`Data persisted locally`, 'success');
+            } catch (e) {
+                log(`❌ Error: ${e.message}`, 'error');
+            }
+        }
+
+        async function testGuestAuth() {
+            document.getElementById('authOutput').innerHTML = '';
+            log('👥 Testing Guest Auth...', 'info');
+
+            const user = {
+                uid: 'guest-' + Date.now(),
+                displayName: 'Guest User',
+                email: `guest-${Date.now()}@unitex.local`,
+                createdAt: new Date().toISOString()
+            };
+
+            try {
+                localStorage.setItem('unitex_user', JSON.stringify(user));
+                localStorage.setItem('unitex_auth_data', JSON.stringify({
+                    method: 'guest',
+                    signInAt: new Date().toISOString()
+                }));
+                
+                log(`✅ Guest Auth Successful!`, 'success');
+                log(`UID: ${user.uid}`, 'success');
+                log(`Guest session created`, 'success');
+            } catch (e) {
+                log(`❌ Error: ${e.message}`, 'error');
+            }
+        }
+
+        function showAllStorage() {
+            document.getElementById('storageOutput').innerHTML = '';
+            log('📊 All localStorage Keys:', 'info');
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                const value = localStorage.getItem(key);
+                log(`${key}: ${value.substring(0, 100)}${value.length > 100 ? '...' : ''}`, 'info');
+            }
+            if (localStorage.length === 0) {
+                log('(empty)', 'error');
+            }
+        }
+
+        function showUserData() {
+            document.getElementById('storageOutput').innerHTML = '';
+            log('👤 User Data:', 'info');
+            const user = localStorage.getItem('unitex_user');
+            if (user) {
+                log(JSON.stringify(JSON.parse(user), null, 2), 'success');
+            } else {
+                log('No user data found', 'error');
+            }
+        }
+
+        function showAuthData() {
+            document.getElementById('storageOutput').innerHTML = '';
+            log('🔐 Auth Data:', 'info');
+            const auth = localStorage.getItem('unitex_auth_data');
+            if (auth) {
+                log(JSON.stringify(JSON.parse(auth), null, 2), 'success');
+            } else {
+                log('No auth data found', 'error');
+            }
+        }
+
+        function clearAllStorage() {
+            document.getElementById('storageOutput').innerHTML = '';
+            localStorage.clear();
+            log('✅ All localStorage cleared!', 'success');
+        }
+
+        function savePost() {
+            const content = document.getElementById('postContent').value;
+            document.getElementById('postsOutput').innerHTML = '';
+            
+            const post = {
+                id: 'post-' + Date.now(),
+                content,
+                author: {
+                    id: 'u-test',
+                    name: 'Test User',
+                    avatar: ''
+                },
+                createdAt: new Date().toISOString(),
+                stats: { likes: 0 }
+            };
+
+            try {
+                const posts = JSON.parse(localStorage.getItem('unitex_posts') || '[]');
+                posts.unshift(post);
+                localStorage.setItem('unitex_posts', JSON.stringify(posts));
+                log(`✅ Post saved!`, 'success');
+                log(`ID: ${post.id}`, 'success');
+                log(`Content: ${content}`, 'success');
+            } catch (e) {
+                log(`❌ Error: ${e.message}`, 'error');
+            }
+        }
+
+        function getPosts() {
+            document.getElementById('postsOutput').innerHTML = '';
+            const posts = JSON.parse(localStorage.getItem('unitex_posts') || '[]');
+            log(`📬 Posts (${posts.length}):`, 'info');
+            posts.forEach(p => {
+                log(`• [${p.id}] ${p.content.substring(0, 50)}...`, 'success');
+            });
+        }
+
+        function clearPosts() {
+            document.getElementById('postsOutput').innerHTML = '';
+            localStorage.removeItem('unitex_posts');
+            log('✅ Posts cleared!', 'success');
+        }
+
+        async function testEvents() {
+            document.getElementById('dataOutput').innerHTML = '';
+            log('📅 Fetching Events...', 'info');
+            try {
+                const res = await fetch('http://localhost:5002/api/events');
+                const data = await res.json();
+                log(`✅ Events loaded (${data.length}):`, 'success');
+                data.forEach(e => {
+                    log(`• ${e.title} - ${e.date}`, 'success');
+                });
+            } catch (e) {
+                log(`❌ Error: ${e.message}`, 'error');
+            }
+        }
+
+        async function testDiscover() {
+            document.getElementById('dataOutput').innerHTML = '';
+            log('🔍 Fetching Discover Feed...', 'info');
+            try {
+                const res = await fetch('http://localhost:5002/api/discover');
+                const data = await res.json();
+                log(`✅ Discover loaded (${data.length}):`, 'success');
+                data.forEach(item => {
+                    log(`• ${item.title}`, 'success');
+                });
+            } catch (e) {
+                log(`❌ Error: ${e.message}`, 'error');
+            }
+        }
+
+        async function testTrending() {
+            document.getElementById('dataOutput').innerHTML = '';
+            log('🔥 Fetching Trending Topics...', 'info');
+            try {
+                const res = await fetch('http://localhost:5002/api/trending');
+                const data = await res.json();
+                log(`✅ Trending loaded (${data.length}):`, 'success');
+                data.forEach(t => {
+                    log(`• ${t.title} (${t.score})`, 'success');
+                });
+            } catch (e) {
+                log(`❌ Error: ${e.message}`, 'error');
+            }
+        }
+
+        // Auto-test on load
+        window.addEventListener('load', () => {
+            log('🚀 UniteX MVP localStorage Test Page Loaded', 'info');
+            log('All data persists locally without Firebase', 'info');
+        });
+    </script>
+</body>
+</html>

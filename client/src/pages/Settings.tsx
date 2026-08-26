@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { updateProfile } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+// local auth shim used via AuthContext
 import { 
     Bell, 
     Shield, 
@@ -91,7 +90,7 @@ function Settings() {
     };
 
     const handleSaveProfile = async () => {
-        if (!currentUser || !auth.currentUser) return;
+        if (!currentUser) return;
         setUpdating(true);
         try {
             const cleanUsername = `@${username.toLowerCase().replace(/[^a-z0-9_]/g, '')}`;
@@ -106,10 +105,7 @@ function Settings() {
                 }
             }
 
-            // 1. Update Auth Profile
-            await updateProfile(auth.currentUser, { displayName });
-            
-            // 2. Update Firestore User Document
+            // 1. Update server-side user document
             const updateData = { 
                 displayName,
                 username: cleanUsername,
@@ -118,9 +114,19 @@ function Settings() {
             };
             await updateUser(currentUser.uid, updateData);
             
-            // 3. Sync to RTDB for components like Sidebar
-            await syncUserToRTDB(currentUser, { ...updateData, photoURL: currentUser.photoURL, userId: usercode });
-            
+            // 2. Sync to RTDB / local sync for components like Sidebar
+            await syncUserToRTDB({ uid: currentUser.uid, displayName, photoURL: currentUser.photoURL }, { ...updateData, photoURL: currentUser.photoURL, userId: usercode });
+
+            // 3. Update local auth storage for immediate UI reflection
+            try {
+                const raw = localStorage.getItem('unitex_user');
+                const lu = raw ? JSON.parse(raw) : null;
+                if (lu && lu.uid === currentUser.uid) {
+                    lu.displayName = displayName;
+                    localStorage.setItem('unitex_user', JSON.stringify(lu));
+                }
+            } catch(e) {}
+
             setOriginalUsername(username);
             toast.success("Profile updated successfully");
         } catch (error) {
@@ -138,10 +144,16 @@ function Settings() {
         setUpdating(true);
         try {
             const photoURL = await uploadAvatar(currentUser.uid, file);
-            // 1. Update Auth Profile for immediate UI reflection
-            if (auth.currentUser) {
-                await updateProfile(auth.currentUser, { photoURL });
-            }
+            // 1. Update server-side avatar and local auth storage
+            await updateUser(currentUser.uid, { photoURL });
+            try {
+                const raw = localStorage.getItem('unitex_user');
+                const lu = raw ? JSON.parse(raw) : null;
+                if (lu && lu.uid === currentUser.uid) {
+                    lu.photoURL = photoURL;
+                    localStorage.setItem('unitex_user', JSON.stringify(lu));
+                }
+            } catch(e) {}
             // 2. Sync to RTDB as well
             await syncUserToRTDB(currentUser, { photoURL, userId: usercode });
             toast.success("Avatar updated!");

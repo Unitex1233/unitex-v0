@@ -14,8 +14,7 @@
 
 import { useState, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { getDoc, doc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+// Use local server users endpoint for MVP
 
 const MEDIA_SERVICE_URL = import.meta.env.VITE_MEDIA_SERVICE_URL || 'http://localhost:4000';
 
@@ -47,10 +46,11 @@ export function useMediaUpload() {
         setResult(null);
 
         try {
-            // ── Get usercode from Firestore ──────────────────────────────────
-            const userSnap = await getDoc(doc(db, 'users', currentUser.uid));
-            const usercode = userSnap.data()?.usercode;
-
+            // ── Get usercode from local server/users endpoint ───────────────
+            const ures = await fetch(`/api/users/${currentUser.uid}`);
+            if (!ures.ok) throw new Error('User not found. Please complete profile setup.');
+            const udata = await ures.json();
+            const usercode = udata.usercode || udata.userId || udata.userId;
             if (!usercode) throw new Error('Usercode not found. Please complete profile setup.');
 
             // ── Build form data ──────────────────────────────────────────────

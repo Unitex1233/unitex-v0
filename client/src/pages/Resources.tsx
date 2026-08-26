@@ -3,8 +3,7 @@ import { BookOpen, Video, FileText, Wrench, LayoutTemplate, Search, Bookmark, Cl
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import { subscribeToCourses, subscribeToResources, subscribeToEnrolledCourses, enrollCourse, subscribeToSavedResources, toggleResourceSave } from '@/lib/firestore';
-import { collection, setDoc, doc, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+// For MVP seeding we use client fallback arrays
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -111,20 +110,12 @@ function Resources() {
         // One-time seeding script if exactly 0 courses/resources are found after a short delay
         let mounted = true;
         const seedDb = async () => {
-            if (dbCourses.length === 0) {
-                const snap = await getDocs(collection(db, 'courses'));
-                if (snap.empty && mounted) {
-                    INITIAL_COURSES.forEach(async (c) => await setDoc(doc(db, 'courses', c.id.toString()), c));
-                }
+            // For MVP, if there is no remote data, use the built-in sample arrays.
+            if (dbCourses.length === 0 && mounted) {
+                setDbCourses(INITIAL_COURSES);
             }
-            if (dbResources.length === 0) {
-                const snap = await getDocs(collection(db, 'resources'));
-                if (snap.empty && mounted) {
-                    INITIAL_RESOURCES.forEach(async (r) => {
-                        const cleanR = { ...r, saved: undefined };
-                        await setDoc(doc(db, 'resources', r.id.toString()), cleanR);
-                    });
-                }
+            if (dbResources.length === 0 && mounted) {
+                setDbResources(INITIAL_RESOURCES.map(r => ({ ...r, saved: undefined })));
             }
         };
         // Give the listeners half a second to populate first

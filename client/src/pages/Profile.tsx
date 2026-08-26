@@ -7,10 +7,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
-import { db } from '@/lib/firebase';
-import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
+import { getUser as getUserFromApi } from '@/lib/firestore';
 
-import { getUser } from '@/lib/firestore';
+// Using localStorage-backed posts for MVP
 import { calculateUserLevel } from '@/lib/intelligence';
 
 function Profile() {
@@ -23,23 +22,34 @@ function Profile() {
     useEffect(() => {
         const fetchUserData = async () => {
             if (!currentUser) return;
-            const data = await getUser(currentUser.uid);
-            setUserData(data);
+            try {
+                const res = await fetch(`/api/users/${currentUser.uid}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setUserData(data);
+                } else {
+                    const data = await getUserFromApi(currentUser.uid);
+                    setUserData(data);
+                }
+            } catch (e) {
+                const data = await getUserFromApi(currentUser.uid);
+                setUserData(data);
+            }
         };
         fetchUserData();
     }, [currentUser]);
 
     useEffect(() => {
         if (!currentUser) return;
-        const q = query(
-            collection(db, 'posts'),
-            where('uid', '==', currentUser.uid),
-            orderBy('createdAt', 'desc')
-        );
-        const unsub = onSnapshot(q, (snap) => {
-            setUserPosts(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Post[]);
-        });
-        return () => unsub();
+        const tick = () => {
+            const raw = localStorage.getItem('unitex_posts');
+            const posts = raw ? JSON.parse(raw) : [];
+            const mine = posts.filter(p => p.uid === currentUser.uid).slice(0,50);
+            setUserPosts(mine);
+        };
+        tick();
+        const id = setInterval(tick, 2000);
+        return () => clearInterval(id);
     }, [currentUser]);
 
     const profileUrl = `https://unitex.io/profile/${currentUser?.uid || 'user'}`;

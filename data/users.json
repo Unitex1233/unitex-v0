@@ -1,0 +1,13 @@
+{
+  "u-1": {
+    "uid": "u-1",
+    "displayName": "Demo User",
+    "username": "@demo",
+    "photoURL": "https://images.unsplash.com/photo-1502685104226-ee32379fefbe?q=80&w=256&h=256&auto=format&fit=crop",
+    "vp": 1200,
+    "exp": 340,
+    "userId": "DEMO01",
+    "usercode": "DEMO01",
+    "createdAt": "2026-08-26T03:00:00.000Z"
+  }
+}

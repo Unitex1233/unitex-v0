@@ -1,31 +1,16 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import {
-    User,
-    signInWithEmailAndPassword,
-    createUserWithEmailAndPassword,
-    signInWithPopup,
-    signOut as firebaseSignOut,
-    onAuthStateChanged,
-    updateProfile,
-    RecaptchaVerifier,
-    signInWithPhoneNumber,
-    ConfirmationResult,
-    signInAnonymously
-} from 'firebase/auth';
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db, googleProvider } from '@/lib/firebase';
-import { onSnapshot } from 'firebase/firestore';
+import { auth as localAuth, db as localDb } from '@/lib/firebase';
 import { syncUserToRTDB } from '@/lib/rtdb';
 import { generateUsercode, generateSafeHandle } from '@/lib/intelligence/identity';
 
 interface AuthContextType {
-    currentUser: User | null;
+    currentUser: any | null;
     userData: any | null;
     loading: boolean;
-    signInWithGoogle: () => Promise<void>;
+    signInWithPhone: (phoneNumber: string) => Promise<void>;
     signInWithEmail: (email: string, password: string) => Promise<void>;
     signUpWithEmail: (email: string, password: string, displayName: string) => Promise<void>;
-    signInWithPhone: (phoneNumber: string, recaptchaContainerId: string) => Promise<void>;
+    signInWithGoogle: () => Promise<void>;
     verifyOtp: (otp: string) => Promise<void>;
     signInAsGuest: () => Promise<void>;
     signOut: () => Promise<void>;
@@ -39,107 +24,100 @@ export function useAuth() {
     return ctx;
 }
 
-async function createUserDocument(user: User) {
-    const userRef = doc(db, 'users', user.uid);
-    const snap = await getDoc(userRef);
-    if (!snap.exists()) {
-        const userId = generateUsercode(); // New 6-char alphanumeric ID
-        const username = generateSafeHandle(user.displayName || (user.isAnonymous ? 'guest' : 'unitex'));
-        
-        await setDoc(userRef, {
-            uid: user.uid,
-            userId, // 6-char alphanumeric ID for blockchain/reference
-            usercode: userId, // Backward compatibility with previous 'usercode' field
-            displayName: user.displayName || (user.isAnonymous ? 'Guest User' : 'UniteX User'),
-            username,
-            email: user.email || null,
-            photoURL: user.photoURL || '',
-            role: 'Member',
-            bio: '',
-            followers: 0,
-            following: 0,
-            profileViews: 0,
-            xp: 100,
-            vp: 100,
-            badges: [],
-            hasSeenCredentials: false,
-            onboardingCompleted: false,
-            createdAt: serverTimestamp(),
+async function createUserDocument(user: any) {
+    // Create or update via server API
+    const payload = {
+        uid: user.uid,
+        displayName: user.displayName || 'UniteX User',
+        email: user.email || null,
+        phone: user.phone || null,
+        photoURL: user.photoURL || '',
+        role: 'Member',
+        userId: generateUsercode(),
+        usercode: generateUsercode(),
+        createdAt: new Date().toISOString()
+    };
+    try {
+        await fetch('/api/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
         });
-    }
-    // Always sync with RTDB for Intelligence Engine
-    await syncUserToRTDB(user);
+    } catch (e) { /* ignore */ }
+
+    // Local sync placeholder
+    try { await syncUserToRTDB(user); } catch (e) { /* ignore */ }
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-    const [currentUser, setCurrentUser] = useState<User | null>(null);
+    const [currentUser, setCurrentUser] = useState<any | null>(null);
     const [userData, setUserData] = useState<any | null>(null);
     const [loading, setLoading] = useState(true);
-    const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+    const [pendingPhone, setPendingPhone] = useState<string | null>(null);
 
     useEffect(() => {
-        const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
-            setCurrentUser(user);
-            
-            if (user) {
-                // Subscribe to real-time updates for THIS user's document
-                const userDocRef = doc(db, 'users', user.uid);
-                const unsubscribeData = onSnapshot(userDocRef, (doc) => {
-                    if (doc.exists()) {
-                        setUserData(doc.data());
-                    }
-                });
-                
-                // Note: We don't return unsubscribeData here directly to avoid closing it prematurely
-                // if auth hasn't changed. We handle it in the cleanup if needed or via a local variable.
-            } else {
-                setUserData(null);
-            }
-            
-            setLoading(false);
-        });
-        
-        return () => {
-            unsubscribeAuth();
-        };
+        const u = localAuth.getCurrentUser();
+        setCurrentUser(u);
+        if (u) {
+            // fetch user profile
+            fetch(`/api/users/${u.uid}`).then((r) => r.ok ? r.json() : null).then((d) => setUserData(d)).catch(() => setUserData(null));
+        }
+        setLoading(false);
     }, []);
 
-    const signInWithGoogle = async () => {
-        const result = await signInWithPopup(auth, googleProvider);
-        await createUserDocument(result.user);
+    const signInWithPhone = async (phoneNumber: string) => {
+        const res = await localAuth.signInWithPhoneNumber(phoneNumber);
+        setCurrentUser(res.user);
+        await createUserDocument(res.user);
     };
 
     const signInWithEmail = async (email: string, password: string) => {
-        await signInWithEmailAndPassword(auth, email, password);
+        const res = await localAuth.signInWithEmail(email, password);
+        setCurrentUser(res.user);
+        await createUserDocument(res.user);
     };
 
     const signUpWithEmail = async (email: string, password: string, displayName: string) => {
-        const result = await createUserWithEmailAndPassword(auth, email, password);
-        await updateProfile(result.user, { displayName });
-        await createUserDocument(result.user);
+        const res = await localAuth.signUp({ email, displayName, password });
+        setCurrentUser(res.user);
+        await createUserDocument(res.user);
     };
 
-    const signInWithPhone = async (phoneNumber: string, recaptchaContainerId: string) => {
-        const verifier = new RecaptchaVerifier(auth, recaptchaContainerId, {
-            size: 'invisible'
-        });
-        const result = await signInWithPhoneNumber(auth, phoneNumber, verifier);
-        setConfirmationResult(result);
+    const signInWithGoogle = async () => {
+        // Local fallback: create a guest-like user with Google metadata
+        const user = { 
+            uid: 'google-' + Date.now(), 
+            displayName: 'Google User ' + Math.random().toString(36).substring(7),
+            email: `google-${Date.now()}@local.unitex`,
+            photoURL: 'https://images.unsplash.com/photo-1502685104226-ee32379fefbe?q=80&w=256&h=256&auto=format&fit=crop',
+            createdAt: new Date().toISOString()
+        };
+        localAuth.currentUser = user;
+        setCurrentUser(user);
+        await createUserDocument(user);
     };
 
     const verifyOtp = async (otp: string) => {
-        if (!confirmationResult) throw new Error('No pending phone verification');
-        const result = await confirmationResult.confirm(otp);
-        await createUserDocument(result.user);
+        // For local mock, OTP step is a no-op
+        return;
     };
 
     const signInAsGuest = async () => {
-        const result = await signInAnonymously(auth);
-        await createUserDocument(result.user);
+        const user = { 
+            uid: 'guest-' + Date.now(), 
+            displayName: 'Guest User',
+            email: `guest-${Date.now()}@local.unitex`,
+            createdAt: new Date().toISOString()
+        };
+        localAuth.currentUser = user;
+        setCurrentUser(user);
+        await createUserDocument(user);
     };
 
     const signOut = async () => {
-        await firebaseSignOut(auth);
+        await localAuth.signOut();
+        setCurrentUser(null);
+        setUserData(null);
     };
 
     return (
@@ -147,10 +125,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             currentUser, 
             userData,
             loading, 
-            signInWithGoogle, 
-            signInWithEmail, 
-            signUpWithEmail, 
             signInWithPhone,
+            signInWithEmail,
+            signUpWithEmail,
+            signInWithGoogle,
             verifyOtp,
             signInAsGuest,
             signOut 
