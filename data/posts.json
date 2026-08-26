@@ -1,0 +1,182 @@
+[
+  {
+    "id": "post-1",
+    "uid": "u-1",
+    "author": {
+      "id": "u-1",
+      "name": "Alex Kumar",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=256&h=256&auto=format&fit=crop",
+      "role": "Founder"
+    },
+    "content": "Just shipped v2.0 of our Web3 infrastructure toolkit! 🚀 Excited to share with the community. Been working on this for 6 months.",
+    "label": "announcement",
+    "media": null,
+    "stats": { "likes": 234, "support": 45, "comments": 28 },
+    "createdAt": "2026-08-26T08:15:00Z"
+  },
+  {
+    "id": "post-2",
+    "uid": "u-2",
+    "author": {
+      "id": "u-2",
+      "name": "Sarah Chen",
+      "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=256&h=256&auto=format&fit=crop",
+      "role": "Designer"
+    },
+    "content": "Design systems are not just about components — they're about culture. Here are 5 lessons I learned building a design system for 200+ engineers.",
+    "label": "insight",
+    "media": null,
+    "stats": { "likes": 156, "support": 32, "comments": 18 },
+    "createdAt": "2026-08-25T14:30:00Z"
+  },
+  {
+    "id": "post-3",
+    "uid": "u-3",
+    "author": {
+      "id": "u-3",
+      "name": "Marcus Trading",
+      "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=256&h=256&auto=format&fit=crop",
+      "role": "Trader"
+    },
+    "content": "BTC breakout above $65k resistance level confirmed. Strong volume, bullish divergence on 4h chart. Long term trend still intact. HODL strong! 📈",
+    "label": "market-update",
+    "media": null,
+    "stats": { "likes": 312, "support": 89, "comments": 42 },
+    "createdAt": "2026-08-26T10:45:00Z"
+  },
+  {
+    "id": "post-4",
+    "uid": "u-4",
+    "author": {
+      "id": "u-4",
+      "name": "Emma Rodriguez",
+      "avatar": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=256&h=256&auto=format&fit=crop",
+      "role": "Developer"
+    },
+    "content": "Open sourced our AI training pipeline! Check it out on GitHub. Uses PyTorch and runs on distributed GPUs. Let me know if you have questions.",
+    "label": "code",
+    "media": null,
+    "stats": { "likes": 445, "support": 120, "comments": 67 },
+    "createdAt": "2026-08-24T16:20:00Z"
+  },
+  {
+    "id": "post-5",
+    "uid": "u-5",
+    "author": {
+      "id": "u-5",
+      "name": "James Wilson",
+      "avatar": "https://images.unsplash.com/photo-1539571696357-5a69c006ae8f?q=80&w=256&h=256&auto=format&fit=crop",
+      "role": "Entrepreneur"
+    },
+    "content": "Announcing new $50M venture fund focused on early-stage Web3 founders. If you're building something revolutionary, let's talk.",
+    "label": "announcement",
+    "media": null,
+    "stats": { "likes": 678, "support": 234, "comments": 95 },
+    "createdAt": "2026-08-23T11:00:00Z"
+  },
+  {
+    "id": "post-6",
+    "uid": "u-6",
+    "author": {
+      "id": "u-6",
+      "name": "Lisa Park",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=256&h=256&auto=format&fit=crop",
+      "role": "Marketer"
+    },
+    "content": "Top 5 growth hacks that actually work (not clickbait): 1) Focus on retention 2) Build community 3) Tell your story 4) Create value 5) Be authentic",
+    "label": "insight",
+    "media": null,
+    "stats": { "likes": 289, "support": 56, "comments": 34 },
+    "createdAt": "2026-08-22T09:30:00Z"
+  },
+  {
+    "id": "post-7",
+    "uid": "u-7",
+    "author": {
+      "id": "u-7",
+      "name": "David Lee",
+      "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=256&h=256&auto=format&fit=crop",
+      "role": "Architect"
+    },
+    "content": "Migrating from monolith to microservices: A retrospective. Lessons learned from scaling from 10k to 1M users. Slides from my talk are live.",
+    "label": "knowledge",
+    "media": null,
+    "stats": { "likes": 334, "support": 78, "comments": 52 },
+    "createdAt": "2026-08-21T15:45:00Z"
+  },
+  {
+    "id": "post-8",
+    "uid": "u-8",
+    "author": {
+      "id": "u-8",
+      "name": "Nina Patel",
+      "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=256&h=256&auto=format&fit=crop",
+      "role": "Analyst"
+    },
+    "content": "New research paper on AI interpretability just published. Check out how we're making black-box models more explainable. Open access.",
+    "label": "research",
+    "media": null,
+    "stats": { "likes": 123, "support": 45, "comments": 21 },
+    "createdAt": "2026-08-20T13:15:00Z"
+  },
+  {
+    "id": "post-9",
+    "uid": "u-1",
+    "author": {
+      "id": "u-1",
+      "name": "Alex Kumar",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=256&h=256&auto=format&fit=crop",
+      "role": "Founder"
+    },
+    "content": "The future of work is remote + async. Built a playbook for distributed teams. No timezone bias, maximum autonomy, results-driven culture.",
+    "label": "thought",
+    "media": null,
+    "stats": { "likes": 267, "support": 82, "comments": 39 },
+    "createdAt": "2026-08-19T10:00:00Z"
+  },
+  {
+    "id": "post-10",
+    "uid": "u-2",
+    "author": {
+      "id": "u-2",
+      "name": "Sarah Chen",
+      "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=256&h=256&auto=format&fit=crop",
+      "role": "Designer"
+    },
+    "content": "Color psychology in UI design: Why we chose this palette for our app. Accessibility first, beauty second. Redesigned for 10M+ users.",
+    "label": "design",
+    "media": null,
+    "stats": { "likes": 198, "support": 41, "comments": 25 },
+    "createdAt": "2026-08-18T12:30:00Z"
+  },
+  {
+    "id": "post-11",
+    "uid": "u-3",
+    "author": {
+      "id": "u-3",
+      "name": "Marcus Trading",
+      "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=256&h=256&auto=format&fit=crop",
+      "role": "Trader"
+    },
+    "content": "Risk management is not boring, it's survival. Position sizing, stop losses, diversification. These are not suggestions, they're laws of trading.",
+    "label": "lesson",
+    "media": null,
+    "stats": { "likes": 412, "support": 156, "comments": 71 },
+    "createdAt": "2026-08-17T14:20:00Z"
+  },
+  {
+    "id": "post-12",
+    "uid": "u-4",
+    "author": {
+      "id": "u-4",
+      "name": "Emma Rodriguez",
+      "avatar": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=256&h=256&auto=format&fit=crop",
+      "role": "Developer"
+    },
+    "content": "Performance optimization tips for React apps: Code splitting, lazy loading, memo, useMemo, useCallback. Got 60% faster load times!",
+    "label": "tutorial",
+    "media": null,
+    "stats": { "likes": 523, "support": 189, "comments": 94 },
+    "createdAt": "2026-08-16T11:45:00Z"
+  }
+]

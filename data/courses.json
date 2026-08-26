@@ -1,0 +1,74 @@
+[
+  {
+    "id": "course-1",
+    "title": "Complete Web3 Development Bootcamp",
+    "description": "Learn blockchain development, smart contracts, and Web3 architecture from scratch.",
+    "instructor": {
+      "id": "u-1",
+      "name": "Alex Kumar",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=256&h=256&auto=format&fit=crop"
+    },
+    "category": "Web3",
+    "level": "Beginner",
+    "duration": "12 weeks",
+    "price": 299,
+    "enrollments": 2451,
+    "rating": 4.8,
+    "image": "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=400&auto=format&fit=crop",
+    "createdAt": "2026-06-01T09:00:00Z"
+  },
+  {
+    "id": "course-2",
+    "title": "Advanced UI/UX Design Systems",
+    "description": "Master design systems, component libraries, and scalable design processes.",
+    "instructor": {
+      "id": "u-2",
+      "name": "Sarah Chen",
+      "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=256&h=256&auto=format&fit=crop"
+    },
+    "category": "Design",
+    "level": "Intermediate",
+    "duration": "8 weeks",
+    "price": 199,
+    "enrollments": 1823,
+    "rating": 4.9,
+    "image": "https://images.unsplash.com/photo-1561070791-2526d30994b5?q=80&w=400&auto=format&fit=crop",
+    "createdAt": "2026-05-15T10:30:00Z"
+  },
+  {
+    "id": "course-3",
+    "title": "Crypto Trading Masterclass",
+    "description": "Learn professional trading strategies, technical analysis, and risk management.",
+    "instructor": {
+      "id": "u-3",
+      "name": "Marcus Trading",
+      "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=256&h=256&auto=format&fit=crop"
+    },
+    "category": "Finance",
+    "level": "Advanced",
+    "duration": "10 weeks",
+    "price": 399,
+    "enrollments": 3124,
+    "rating": 4.7,
+    "image": "https://images.unsplash.com/photo-1518186285034-76d393e4bd95?q=80&w=400&auto=format&fit=crop",
+    "createdAt": "2026-04-20T14:15:00Z"
+  },
+  {
+    "id": "course-4",
+    "title": "AI & Machine Learning for Developers",
+    "description": "Practical guide to building AI applications with PyTorch, TensorFlow, and more.",
+    "instructor": {
+      "id": "u-4",
+      "name": "Emma Rodriguez",
+      "avatar": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=256&h=256&auto=format&fit=crop"
+    },
+    "category": "AI/ML",
+    "level": "Intermediate",
+    "duration": "14 weeks",
+    "price": 349,
+    "enrollments": 2567,
+    "rating": 4.8,
+    "image": "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=400&auto=format&fit=crop",
+    "createdAt": "2026-03-10T11:45:00Z"
+  }
+]
