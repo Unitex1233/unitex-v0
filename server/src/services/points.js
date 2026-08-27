@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const { pool } = require('../db');
 
 // Local storage fallback for development
 const VAULT_PATH = path.join(__dirname, '../../data/points_vault.json');
