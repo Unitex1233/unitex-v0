@@ -1,0 +1,226 @@
+{
+  "u-1": {
+    "uid": "u-1",
+    "displayName": "Alex Kumar",
+    "username": "@alexkumar",
+    "email": "alex@unitex.local",
+    "phone": "+1-234-567-8900",
+    "photoURL": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=256&h=256&auto=format&fit=crop",
+    "role": "Founder",
+    "bio": "Web3 architect | Building the future of decentralized networks 🚀",
+    "vp": 3500,
+    "exp": 2450,
+    "userId": "ALEX001",
+    "usercode": "ALEX001",
+    "websiteURL": "https://alexkumar.dev",
+    "location": "San Francisco, CA",
+    "connectionsCount": 287,
+    "connections": {
+      "u-2": { "connectedAt": "2026-08-20T10:30:00Z" },
+      "u-3": { "connectedAt": "2026-08-18T14:22:00Z" },
+      "u-5": { "connectedAt": "2026-08-15T09:45:00Z" }
+    },
+    "enrolled_courses": {
+      "course-1": { "enrolledAt": "2026-08-10T08:00:00Z", "progress": 75 }
+    },
+    "saved_resources": {
+      "res-1": { "savedAt": "2026-08-22T16:30:00Z" }
+    },
+    "createdAt": "2026-07-15T03:00:00Z"
+  },
+  "u-2": {
+    "uid": "u-2",
+    "displayName": "Sarah Chen",
+    "username": "@sarahchen",
+    "email": "sarah@unitex.local",
+    "phone": "+1-345-678-9012",
+    "photoURL": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=256&h=256&auto=format&fit=crop",
+    "role": "Designer",
+    "bio": "UI/UX designer passionate about creating intuitive interfaces ✨",
+    "vp": 2800,
+    "exp": 1920,
+    "userId": "SARAH02",
+    "usercode": "SARAH02",
+    "websiteURL": "https://sarahdesigns.io",
+    "location": "New York, NY",
+    "connectionsCount": 156,
+    "connections": {
+      "u-1": { "connectedAt": "2026-08-20T10:30:00Z" },
+      "u-4": { "connectedAt": "2026-08-19T11:15:00Z" }
+    },
+    "enrolled_courses": {
+      "course-2": { "enrolledAt": "2026-08-12T09:00:00Z", "progress": 45 }
+    },
+    "saved_resources": {
+      "res-2": { "savedAt": "2026-08-23T14:20:00Z" },
+      "res-3": { "savedAt": "2026-08-21T10:45:00Z" }
+    },
+    "createdAt": "2026-07-20T05:30:00Z"
+  },
+  "u-3": {
+    "uid": "u-3",
+    "displayName": "Marcus Trading",
+    "username": "@marcustrading",
+    "email": "marcus@unitex.local",
+    "phone": "+1-456-789-0123",
+    "photoURL": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=256&h=256&auto=format&fit=crop",
+    "role": "Trader",
+    "bio": "Crypto trader | 10+ years in finance | DeFi enthusiast 📈",
+    "vp": 5200,
+    "exp": 4100,
+    "userId": "MARCUS3",
+    "usercode": "MARCUS3",
+    "websiteURL": "https://marcustrading.pro",
+    "location": "London, UK",
+    "connectionsCount": 423,
+    "connections": {
+      "u-1": { "connectedAt": "2026-08-18T14:22:00Z" },
+      "u-5": { "connectedAt": "2026-08-17T16:40:00Z" },
+      "u-6": { "connectedAt": "2026-08-16T12:10:00Z" }
+    },
+    "enrolled_courses": {
+      "course-3": { "enrolledAt": "2026-08-08T10:00:00Z", "progress": 92 }
+    },
+    "saved_resources": {},
+    "createdAt": "2026-07-01T02:15:00Z"
+  },
+  "u-4": {
+    "uid": "u-4",
+    "displayName": "Emma Rodriguez",
+    "username": "@emmarodriguez",
+    "email": "emma@unitex.local",
+    "phone": "+1-567-890-1234",
+    "photoURL": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=256&h=256&auto=format&fit=crop",
+    "role": "Developer",
+    "bio": "Full-stack dev | AI/ML engineer | Open source contributor 💻",
+    "vp": 4100,
+    "exp": 3200,
+    "userId": "EMMA004",
+    "usercode": "EMMA004",
+    "websiteURL": "https://emmadev.io",
+    "location": "Austin, TX",
+    "connectionsCount": 234,
+    "connections": {
+      "u-2": { "connectedAt": "2026-08-19T11:15:00Z" },
+      "u-7": { "connectedAt": "2026-08-14T09:30:00Z" }
+    },
+    "enrolled_courses": {
+      "course-1": { "enrolledAt": "2026-08-05T07:00:00Z", "progress": 88 },
+      "course-4": { "enrolledAt": "2026-08-15T11:00:00Z", "progress": 30 }
+    },
+    "saved_resources": {
+      "res-4": { "savedAt": "2026-08-24T13:15:00Z" }
+    },
+    "createdAt": "2026-07-10T06:45:00Z"
+  },
+  "u-5": {
+    "uid": "u-5",
+    "displayName": "James Wilson",
+    "username": "@jameswilson",
+    "email": "james@unitex.local",
+    "phone": "+1-678-901-2345",
+    "photoURL": "https://images.unsplash.com/photo-1539571696357-5a69c006ae8f?q=80&w=256&h=256&auto=format&fit=crop",
+    "role": "Entrepreneur",
+    "bio": "Startup founder | Investor | Mentor to 50+ founders 🚀",
+    "vp": 6100,
+    "exp": 5300,
+    "userId": "JAMES05",
+    "usercode": "JAMES05",
+    "websiteURL": "https://jameswilson.ventures",
+    "location": "Dubai, UAE",
+    "connectionsCount": 512,
+    "connections": {
+      "u-1": { "connectedAt": "2026-08-15T09:45:00Z" },
+      "u-3": { "connectedAt": "2026-08-17T16:40:00Z" },
+      "u-8": { "connectedAt": "2026-08-13T14:25:00Z" }
+    },
+    "enrolled_courses": {},
+    "saved_resources": {
+      "res-1": { "savedAt": "2026-08-20T10:00:00Z" },
+      "res-5": { "savedAt": "2026-08-25T15:45:00Z" }
+    },
+    "createdAt": "2026-06-25T04:00:00Z"
+  },
+  "u-6": {
+    "uid": "u-6",
+    "displayName": "Lisa Park",
+    "username": "@lisapark",
+    "email": "lisa@unitex.local",
+    "phone": "+1-789-012-3456",
+    "photoURL": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=256&h=256&auto=format&fit=crop",
+    "role": "Marketer",
+    "bio": "Growth marketer | Content strategist | Community builder 📢",
+    "vp": 2400,
+    "exp": 1650,
+    "userId": "LISA006",
+    "usercode": "LISA006",
+    "websiteURL": "https://lisaparkmarketing.com",
+    "location": "Singapore",
+    "connectionsCount": 178,
+    "connections": {
+      "u-3": { "connectedAt": "2026-08-16T12:10:00Z" }
+    },
+    "enrolled_courses": {
+      "course-2": { "enrolledAt": "2026-08-18T09:00:00Z", "progress": 22 }
+    },
+    "saved_resources": {
+      "res-2": { "savedAt": "2026-08-22T11:30:00Z" }
+    },
+    "createdAt": "2026-07-28T07:20:00Z"
+  },
+  "u-7": {
+    "uid": "u-7",
+    "displayName": "David Lee",
+    "username": "@davidlee",
+    "email": "david@unitex.local",
+    "phone": "+1-890-123-4567",
+    "photoURL": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=256&h=256&auto=format&fit=crop",
+    "role": "Architect",
+    "bio": "Enterprise architect | Blockchain expert | Speaking at tech conferences 🎤",
+    "vp": 3900,
+    "exp": 3100,
+    "userId": "DAVID07",
+    "usercode": "DAVID07",
+    "websiteURL": "https://davidarchitect.com",
+    "location": "Toronto, Canada",
+    "connectionsCount": 289,
+    "connections": {
+      "u-4": { "connectedAt": "2026-08-14T09:30:00Z" }
+    },
+    "enrolled_courses": {
+      "course-3": { "enrolledAt": "2026-08-01T08:00:00Z", "progress": 65 }
+    },
+    "saved_resources": {
+      "res-3": { "savedAt": "2026-08-19T14:00:00Z" },
+      "res-5": { "savedAt": "2026-08-23T10:30:00Z" }
+    },
+    "createdAt": "2026-07-05T03:50:00Z"
+  },
+  "u-8": {
+    "uid": "u-8",
+    "displayName": "Nina Patel",
+    "username": "@ninapatel",
+    "email": "nina@unitex.local",
+    "phone": "+1-901-234-5678",
+    "photoURL": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=256&h=256&auto=format&fit=crop",
+    "role": "Analyst",
+    "bio": "Data scientist | AI researcher | Published author ✍️",
+    "vp": 3200,
+    "exp": 2400,
+    "userId": "NINA008",
+    "usercode": "NINA008",
+    "websiteURL": "https://ninaanalytics.ai",
+    "location": "Boston, MA",
+    "connectionsCount": 145,
+    "connections": {
+      "u-5": { "connectedAt": "2026-08-13T14:25:00Z" }
+    },
+    "enrolled_courses": {
+      "course-4": { "enrolledAt": "2026-08-06T10:00:00Z", "progress": 55 }
+    },
+    "saved_resources": {
+      "res-4": { "savedAt": "2026-08-21T09:15:00Z" }
+    },
+    "createdAt": "2026-07-12T05:30:00Z"
+  }
+}

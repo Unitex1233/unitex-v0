@@ -1,0 +1,58 @@
+[
+  {
+    "id": "nr-1",
+    "fromUid": "u-2",
+    "fromName": "Sarah Chen",
+    "toUid": "u-1",
+    "status": "pending",
+    "message": "Love your Web3 work! Would love to collaborate on design.",
+    "createdAt": "2026-08-26T09:00:00Z"
+  },
+  {
+    "id": "nr-2",
+    "fromUid": "u-6",
+    "fromName": "Lisa Park",
+    "toUid": "u-5",
+    "status": "pending",
+    "message": "James, let's discuss growth strategies for our upcoming launch.",
+    "createdAt": "2026-08-26T08:30:00Z"
+  },
+  {
+    "id": "nr-3",
+    "fromUid": "u-7",
+    "fromName": "David Lee",
+    "toUid": "u-3",
+    "status": "pending",
+    "message": "Marcus, interested in your DeFi insights. Can we chat?",
+    "createdAt": "2026-08-25T15:20:00Z"
+  },
+  {
+    "id": "nr-4",
+    "fromUid": "u-8",
+    "fromName": "Nina Patel",
+    "toUid": "u-4",
+    "status": "pending",
+    "message": "Emma, your AI work is amazing. Want to explore a research collaboration?",
+    "createdAt": "2026-08-25T12:00:00Z"
+  },
+  {
+    "id": "nr-5",
+    "fromUid": "u-1",
+    "fromName": "Alex Kumar",
+    "toUid": "u-7",
+    "status": "accepted",
+    "message": "David, loved your architecture talk at the conference.",
+    "createdAt": "2026-08-24T10:30:00Z",
+    "acceptedAt": "2026-08-24T16:45:00Z"
+  },
+  {
+    "id": "nr-6",
+    "fromUid": "u-5",
+    "fromName": "James Wilson",
+    "toUid": "u-6",
+    "status": "accepted",
+    "message": "Lisa, let's discuss the marketing strategy for the fund.",
+    "createdAt": "2026-08-23T14:00:00Z",
+    "acceptedAt": "2026-08-23T18:30:00Z"
+  }
+]

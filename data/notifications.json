@@ -1,0 +1,112 @@
+[
+  {
+    "id": "n-1",
+    "recipientUid": "u-1",
+    "senderUid": "u-2",
+    "senderName": "Sarah Chen",
+    "type": "connection_accepted",
+    "content": "Sarah Chen accepted your connection request",
+    "actionUrl": "/profile/u-2",
+    "read": false,
+    "createdAt": "2026-08-26T13:45:00Z"
+  },
+  {
+    "id": "n-2",
+    "recipientUid": "u-1",
+    "senderUid": "u-3",
+    "senderName": "Marcus Trading",
+    "type": "like",
+    "content": "Marcus liked your post about Web3 infrastructure",
+    "actionUrl": "/posts/post-1",
+    "read": false,
+    "createdAt": "2026-08-26T13:20:00Z"
+  },
+  {
+    "id": "n-3",
+    "recipientUid": "u-1",
+    "senderUid": "u-4",
+    "senderName": "Emma Rodriguez",
+    "type": "follow",
+    "content": "Emma Rodriguez started following you",
+    "actionUrl": "/profile/u-4",
+    "read": false,
+    "createdAt": "2026-08-26T12:50:00Z"
+  },
+  {
+    "id": "n-4",
+    "recipientUid": "u-2",
+    "senderUid": "u-5",
+    "senderName": "James Wilson",
+    "type": "comment",
+    "content": "James commented on your design systems post",
+    "actionUrl": "/posts/post-2",
+    "read": false,
+    "createdAt": "2026-08-26T11:30:00Z"
+  },
+  {
+    "id": "n-5",
+    "recipientUid": "u-3",
+    "senderUid": "u-1",
+    "senderName": "Alex Kumar",
+    "type": "support",
+    "content": "Alex supported your market update (50 VP awarded!)",
+    "actionUrl": "/posts/post-3",
+    "read": true,
+    "createdAt": "2026-08-25T16:15:00Z"
+  },
+  {
+    "id": "n-6",
+    "recipientUid": "u-4",
+    "senderUid": "system",
+    "senderName": "UniteX",
+    "type": "system",
+    "content": "Your post reached 500+ people! Great engagement.",
+    "actionUrl": "/posts/post-4",
+    "read": true,
+    "createdAt": "2026-08-25T14:00:00Z"
+  },
+  {
+    "id": "n-7",
+    "recipientUid": "u-5",
+    "senderUid": "u-2",
+    "senderName": "Sarah Chen",
+    "type": "follow",
+    "content": "Sarah Chen started following you",
+    "actionUrl": "/profile/u-2",
+    "read": false,
+    "createdAt": "2026-08-26T10:20:00Z"
+  },
+  {
+    "id": "n-8",
+    "recipientUid": "u-6",
+    "senderUid": "u-3",
+    "senderName": "Marcus Trading",
+    "type": "connection_accepted",
+    "content": "Marcus Trading accepted your connection request",
+    "actionUrl": "/profile/u-3",
+    "read": true,
+    "createdAt": "2026-08-24T15:30:00Z"
+  },
+  {
+    "id": "n-9",
+    "recipientUid": "u-7",
+    "senderUid": "u-8",
+    "senderName": "Nina Patel",
+    "type": "like",
+    "content": "Nina liked your architecture post",
+    "actionUrl": "/posts/post-7",
+    "read": false,
+    "createdAt": "2026-08-26T09:15:00Z"
+  },
+  {
+    "id": "n-10",
+    "recipientUid": "u-8",
+    "senderUid": "u-4",
+    "senderName": "Emma Rodriguez",
+    "type": "follow",
+    "content": "Emma Rodriguez started following you",
+    "actionUrl": "/profile/u-4",
+    "read": false,
+    "createdAt": "2026-08-25T18:45:00Z"
+  }
+]

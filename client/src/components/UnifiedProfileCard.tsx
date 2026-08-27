@@ -6,8 +6,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
-import { ref, onValue } from 'firebase/database';
-import { rtdb } from '@/lib/firebase';
+import { subscribeToRealtimePosts } from '@/lib/rtdb';
 
 export function UnifiedProfileCard() {
     const { currentUser } = useAuth();
@@ -20,21 +19,47 @@ export function UnifiedProfileCard() {
 
     useEffect(() => {
         if (!currentUser?.uid) return;
-        
-        const userRef = ref(rtdb, `users/${currentUser.uid}`);
-        const unsubscribe = onValue(userRef, (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
+
+        // Try server-side users endpoint first
+        let mounted = true;
+        const fetchUser = async () => {
+            try {
+                const res = await fetch(`/api/users/${currentUser.uid}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (!mounted) return;
+                    setVp(data.vp || 0);
+                    setNiche(data.niche || (data.tags && data.tags.length > 0 ? data.tags[0] : 'General Node'));
+                    setUsername(data.username || '');
+                    setUsercode(data.usercode || '');
+                    setDisplayName(data.displayName || currentUser?.displayName || 'Anonymous Node');
+                    setPhotoURL(data.photoURL || currentUser?.photoURL || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200&auto=format&fit=crop');
+                } else {
+                    // Fallback to localStorage
+                    const raw = localStorage.getItem('unitex_users');
+                    const users = raw ? JSON.parse(raw) : {};
+                    const data = users[currentUser.uid] || {};
+                    setVp(data.vp || 0);
+                    setUsername(data.username || '');
+                    setUsercode(data.usercode || '');
+                    setDisplayName(data.displayName || currentUser?.displayName || 'Anonymous Node');
+                    setPhotoURL(data.photoURL || currentUser?.photoURL || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200&auto=format&fit=crop');
+                }
+            } catch (e) {
+                const raw = localStorage.getItem('unitex_users');
+                const users = raw ? JSON.parse(raw) : {};
+                const data = users[currentUser.uid] || {};
                 setVp(data.vp || 0);
-                setNiche(data.niche || (data.tags && data.tags.length > 0 ? data.tags[0] : 'General Node'));
                 setUsername(data.username || '');
                 setUsercode(data.usercode || '');
                 setDisplayName(data.displayName || currentUser?.displayName || 'Anonymous Node');
                 setPhotoURL(data.photoURL || currentUser?.photoURL || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200&auto=format&fit=crop');
             }
-        });
-        
-        return () => unsubscribe();
+        };
+
+        fetchUser();
+        const id = setInterval(fetchUser, 5000);
+        return () => { mounted = false; clearInterval(id); };
     }, [currentUser]);
 
     const profileUrl = `https://unitex.io/profile/${username || currentUser?.uid || 'guest'}`;

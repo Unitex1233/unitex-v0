@@ -1,9 +1,17 @@
-import {
-    collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc,
-    query, orderBy, limit, where, serverTimestamp, onSnapshot,
-    Unsubscribe, DocumentData, setDoc, increment, writeBatch
-} from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+// LocalStorage / server-based minimal replacements for Firestore functions (MVP)
+// Expose the same function names but backed by localStorage or server endpoints.
+
+export type Unsubscribe = () => void;
+export type DocumentData = any;
+
+function getLocal(key: string) {
+    try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : null; } catch(e) { return null; }
+}
+function setLocal(key: string, value: any) {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch(e) {}
+}
+
+function nowISO() { return new Date().toISOString(); }
 
 // ─── UTILITIES ────────────────────────────────────────────────────────────────
 
@@ -58,8 +66,9 @@ export async function createPost(data: {
     if (data.mediaFile) {
         mediaURL = await compressImageToBase64(data.mediaFile, 1200, 1200, 0.6);
     }
-
-    return addDoc(collection(db, 'posts'), {
+    const posts = getLocal('unitex_posts') || [];
+    const post = {
+        id: 'post-' + Date.now(),
         uid: data.uid,
         author: {
             id: data.uid,
@@ -71,126 +80,94 @@ export async function createPost(data: {
         label: data.label || null,
         media: mediaURL ? { type: 'image', url: mediaURL } : null,
         stats: { likes: 0, support: 0, comments: 0 },
-        createdAt: serverTimestamp(),
-    });
+        createdAt: nowISO(),
+    };
+    posts.unshift(post);
+    setLocal('unitex_posts', posts.slice(0, 500));
+    return post;
 }
 
 export function subscribeToPosts(callback: (posts: DocumentData[]) => void): Unsubscribe {
-    const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'), limit(30));
-    return onSnapshot(q, (snap) => {
-        const posts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        callback(posts);
-    });
+    const tick = () => {
+        const posts = getLocal('unitex_posts') || [];
+        callback(posts.slice(0, 50));
+    };
+    tick();
+    const id = setInterval(tick, 800);
+    return () => clearInterval(id);
 }
 
 export async function likePost(postId: string) {
-    await updateDoc(doc(db, 'posts', postId), { 'stats.likes': increment(1) });
+    const posts = getLocal('unitex_posts') || [];
+    const idx = posts.findIndex((p:any) => p.id === postId);
+    if (idx !== -1) {
+        posts[idx].stats = posts[idx].stats || { likes: 0, support: 0, comments: 0 };
+        posts[idx].stats.likes = (posts[idx].stats.likes || 0) + 1;
+        setLocal('unitex_posts', posts);
+    }
 }
 
 // ─── USERS ────────────────────────────────────────────────────────────────────
 
 export async function getUser(uid: string) {
-    const snap = await getDoc(doc(db, 'users', uid));
-    return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+    try {
+        const res = await fetch(`/api/users/${uid}`);
+        if (res.ok) return res.json();
+    } catch(e) {}
+    const users = getLocal('unitex_users') || {};
+    return users[uid] || null;
 }
 
 export async function updateUser(uid: string, data: Partial<DocumentData>) {
-    await setDoc(doc(db, 'users', uid), data, { merge: true });
+    try {
+        await fetch(`/api/users/${uid}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data)
+        });
+    } catch(e) {}
+    const users = getLocal('unitex_users') || {};
+    users[uid] = { ...(users[uid] || {}), ...data };
+    setLocal('unitex_users', users);
 }
 
 export async function isUsernameAvailable(username: string): Promise<boolean> {
-    const q = query(collection(db, 'users'), where('username', '==', username), limit(1));
-    const snap = await getDocs(q);
-    return snap.empty;
+    // Check local users for now
+    const users = getLocal('unitex_users') || {};
+    for (const k of Object.keys(users)) {
+        if (users[k]?.username === username) return false;
+    }
+    return true;
 }
 
 
 export async function uploadAvatar(uid: string, file: File): Promise<string> {
     const url = await compressImageToBase64(file, 400, 400, 0.7);
-    await updateDoc(doc(db, 'users', uid), { photoURL: url });
+    await updateUser(uid, { photoURL: url });
     return url;
 }
 
 export async function searchUsers(searchTerm: string) {
     if (!searchTerm || searchTerm.length < 1) return [];
-
-    const lowerTerm = searchTerm.toLowerCase();
-    const upperTerm = searchTerm.toUpperCase();
-    const cleanUsername = searchTerm.startsWith('@') ? lowerTerm : `@${lowerTerm}`;
-
-    // 1. Exact Match on userId (the new 6-char ID)
-    const qUserId = query(collection(db, 'users'), where('userId', '==', upperTerm), limit(5));
-    
-    // 2. Exact Match on older usercode
-    const qCode = query(collection(db, 'users'), where('usercode', '==', upperTerm), limit(5));
-    
-    // 3. Prefix Match on @username
-    const qUsername = query(
-        collection(db, 'users'), 
-        where('username', '>=', cleanUsername), 
-        where('username', '<=', cleanUsername + '\uf8ff'),
-        limit(10)
-    );
-
-    // 4. Exact Match on UID
-    const qUid = query(collection(db, 'users'), where('uid', '==', searchTerm), limit(5));
-
-    // 5. Prefix Match on Display Name
-    const qName = query(
-        collection(db, 'users'), 
-        where('displayName', '>=', searchTerm), 
-        where('displayName', '<=', searchTerm + '\uf8ff'),
-        limit(10)
-    );
-
-    // 6. Case-Insensitive Prefix Match for Name (Common for user searches)
-    const capitalizedTerm = searchTerm.charAt(0).toUpperCase() + searchTerm.slice(1).toLowerCase();
-    const qNameCap = query(
-        collection(db, 'users'), 
-        where('displayName', '>=', capitalizedTerm), 
-        where('displayName', '<=', capitalizedTerm + '\uf8ff'),
-        limit(10)
-    );
-
-    const [snapUserId, snapCode, snapUsername, snapUid, snapName, snapNameCap] = await Promise.all([
-        getDocs(qUserId),
-        getDocs(qCode),
-        getDocs(qUsername),
-        getDocs(qUid),
-        getDocs(qName),
-        getDocs(qNameCap)
-    ]);
-
-    const resultsMap = new Map<string, any>();
-
-    // Prioritize results: userId > usercode > username > uid > displayName
-    const allSnaps = [
-        { docs: snapUserId.docs, score: 1.0 },
-        { docs: snapCode.docs, score: 0.95 },
-        { docs: snapUsername.docs, score: 0.9 },
-        { docs: snapUid.docs, score: 0.85 },
-        { docs: snapName.docs, score: 0.8 },
-        { docs: snapNameCap.docs, score: 0.75 }
-    ];
-
-    allSnaps.forEach(({ docs, score }) => {
-        docs.forEach(d => {
-            if (!resultsMap.has(d.id)) {
-                resultsMap.set(d.id, { id: d.id, ...d.data(), score });
-            }
-        });
-    });
-
-    return Array.from(resultsMap.values()).sort((a, b) => b.score - a.score);
+    const users = getLocal('unitex_users') || {};
+    const results: any[] = [];
+    const lower = searchTerm.toLowerCase();
+    for (const uid of Object.keys(users)) {
+        const u = users[uid];
+        if (!u) continue;
+        const name = (u.displayName || '').toLowerCase();
+        const username = (u.username || '').toLowerCase();
+        const userId = (u.userId || '').toLowerCase();
+        if (name.includes(lower) || username.includes(lower) || userId.includes(lower) || uid === searchTerm) {
+            results.push({ id: uid, ...u });
+        }
+    }
+    return results.slice(0, 50);
 }
 
 // ─── REFERRAL SYSTEM ──────────────────────────────────────────────────────────
 
 export function generateReferralCode(uid: string): string {
-    // Generates a deterministic but unique referral code from the user's UID
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let code = 'UX-';
-    // Use uid chars as a seed
     for (let i = 0; i < 6; i++) {
         const charCode = uid.charCodeAt(i % uid.length) + i * 7;
         code += chars[charCode % chars.length];
@@ -200,57 +177,35 @@ export function generateReferralCode(uid: string): string {
 
 export async function saveReferralCode(uid: string): Promise<string> {
     const code = generateReferralCode(uid);
-    await setDoc(doc(db, 'users', uid), { referralCode: code }, { merge: true });
+    await updateUser(uid, { referralCode: code });
     return code;
 }
 
 export async function getReferralStats(uid: string): Promise<{ code: string; referrals: any[] }> {
-    const userSnap = await getDoc(doc(db, 'users', uid));
-    const code = userSnap.exists() ? userSnap.data().referralCode || generateReferralCode(uid) : generateReferralCode(uid);
-    
-    const q = query(collection(db, 'referrals'), where('referrerUid', '==', uid), orderBy('createdAt', 'desc'), limit(20));
-    const snap = await getDocs(q);
-    const referrals = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    
+    const user = await getUser(uid);
+    const code = (user && (user.referralCode || generateReferralCode(uid))) || generateReferralCode(uid);
+    const referrals = [];
     return { code, referrals };
 }
 
 export async function applyReferralCode(newUid: string, code: string): Promise<boolean> {
-    try {
-        const q = query(collection(db, 'users'), where('referralCode', '==', code.toUpperCase()), limit(1));
-        const snap = await getDocs(q);
-        if (snap.empty) return false;
-        
-        const referrerDoc = snap.docs[0];
-        const referrerUid = referrerDoc.id;
-        if (referrerUid === newUid) return false; // Can't refer yourself
-        
-        // Record the referral
-        await addDoc(collection(db, 'referrals'), {
-            referrerUid,
-            referredUid: newUid,
-            code,
-            createdAt: serverTimestamp()
-        });
-        
-        // Award VP to referrer
-        await updateDoc(doc(db, 'users', referrerUid), { vp: increment(100), exp: increment(500) });
-        return true;
-    } catch {
-        return false;
-    }
+    // Simple local implementation: find user with code and award them
+    const users = getLocal('unitex_users') || {};
+    const referrerUid = Object.keys(users).find(k => users[k]?.referralCode === code.toUpperCase());
+    if (!referrerUid || referrerUid === newUid) return false;
+    const referrer = users[referrerUid];
+    referrer.vp = (referrer.vp || 0) + 100;
+    referrer.exp = (referrer.exp || 0) + 500;
+    setLocal('unitex_users', users);
+    return true;
 }
 
 // ─── VP / EXP ─────────────────────────────────────────────────────────────────
 
 export async function getUserRewards(uid: string): Promise<{ exp: number; vp: number; level: number; title: string }> {
-    const snap = await getDoc(doc(db, 'users', uid));
-    if (!snap.exists()) return { exp: 0, vp: 0, level: 1, title: 'Newcomer' };
-    const data = snap.data();
-    const exp = data.exp || 0;
-    const vp = data.vp || 0;
-    
-    // Level ladder
+    const user = await getUser(uid);
+    const exp = (user && user.exp) || 0;
+    const vp = (user && user.vp) || 0;
     const levels = [
         { threshold: 0, title: 'Newcomer' },
         { threshold: 500, title: 'Contributor' },
@@ -260,105 +215,102 @@ export async function getUserRewards(uid: string): Promise<{ exp: number; vp: nu
         { threshold: 25000, title: 'Guardian' },
         { threshold: 50000, title: 'Legend' },
     ];
-    
     let level = 1;
     let title = 'Newcomer';
     for (const l of levels) {
         if (exp >= l.threshold) { level = levels.indexOf(l) + 1; title = l.title; }
     }
-    
     return { exp, vp, level, title };
 }
 
 export async function awardExp(uid: string, amount: number, reason: string = '') {
-    await updateDoc(doc(db, 'users', uid), { exp: increment(amount) });
-    await addDoc(collection(db, 'activity_log'), {
-        uid, action: reason, exp: amount, createdAt: serverTimestamp()
-    });
+    const users = getLocal('unitex_users') || {};
+    users[uid] = users[uid] || {};
+    users[uid].exp = (users[uid].exp || 0) + amount;
+    setLocal('unitex_users', users);
 }
 
 // ─── COMMUNITIES ──────────────────────────────────────────────────────────────
 
 export async function getCommunities() {
-    const snap = await getDocs(query(collection(db, 'communities'), orderBy('members', 'desc'), limit(20)));
-    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    return getLocal('unitex_communities') || [];
 }
 
 export async function joinCommunity(communityId: string, uid: string) {
-    await setDoc(doc(db, 'communities', communityId, 'members', uid), { joinedAt: serverTimestamp() });
-    await updateDoc(doc(db, 'communities', communityId), { members: increment(1) });
+    const communities = getLocal('unitex_communities') || {};
+    communities[communityId] = communities[communityId] || { members: 0, membersList: {} };
+    communities[communityId].members += 1;
+    communities[communityId].membersList[uid] = { joinedAt: nowISO() };
+    setLocal('unitex_communities', communities);
 }
 
 // ─── MESSAGES ────────────────────────────────────────────────────────────────
 
 export function subscribeToConversations(uid: string, callback: (convs: DocumentData[]) => void): Unsubscribe {
-    const q = query(
-        collection(db, 'conversations'),
-        where('participants', 'array-contains', uid),
-        orderBy('lastMessageAt', 'desc')
-    );
-    return onSnapshot(q, snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+    const tick = () => {
+        const convs = getLocal('unitex_conversations') || [];
+        const filtered = convs.filter((c:any) => c.participants && c.participants.includes(uid));
+        callback(filtered);
+    };
+    tick();
+    const id = setInterval(tick, 800);
+    return () => clearInterval(id);
 }
 
 export async function createConversation(participants: string[], participantDetails: any) {
-    return addDoc(collection(db, 'conversations'), {
-        participants,
-        details: participantDetails,
-        createdAt: serverTimestamp(),
-        lastMessageAt: serverTimestamp()
-    });
+    const convs = getLocal('unitex_conversations') || [];
+    const conv = { id: 'conv-' + Date.now(), participants, details: participantDetails, createdAt: nowISO(), lastMessageAt: nowISO() };
+    convs.unshift(conv);
+    setLocal('unitex_conversations', convs);
+    return conv;
 }
 
 export function subscribeToMessages(
     conversationId: string,
     callback: (msgs: DocumentData[]) => void
 ): Unsubscribe {
-    const q = query(
-        collection(db, 'conversations', conversationId, 'messages'),
-        orderBy('createdAt', 'asc')
-    );
-    return onSnapshot(q, snap => {
-        callback(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
+    const tick = () => {
+        const msgs = getLocal(`unitex_conv_${conversationId}_msgs`) || [];
+        callback(msgs);
+    };
+    tick();
+    const id = setInterval(tick, 800);
+    return () => clearInterval(id);
 }
 
 export async function sendMessage(conversationId: string, uid: string, displayName: string, text: string) {
-    await addDoc(collection(db, 'conversations', conversationId, 'messages'), {
-        uid,
-        senderName: displayName,
-        text,
-        createdAt: serverTimestamp(),
-    });
-    await updateDoc(doc(db, 'conversations', conversationId), {
-        lastMessage: text,
-        lastMessageAt: serverTimestamp(),
-    });
+    const msgs = getLocal(`unitex_conv_${conversationId}_msgs`) || [];
+    const m = { id: 'm-' + Date.now(), uid, senderName: displayName, text, createdAt: nowISO() };
+    msgs.push(m);
+    setLocal(`unitex_conv_${conversationId}_msgs`, msgs);
+    const convs = getLocal('unitex_conversations') || [];
+    const conv = convs.find((c:any) => c.id === conversationId);
+    if (conv) { conv.lastMessage = text; conv.lastMessageAt = nowISO(); setLocal('unitex_conversations', convs); }
 }
 
 // ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
 
 export function subscribeToNotifications(uid: string, callback: (notifs: DocumentData[]) => void): Unsubscribe {
-    const q = query(
-        collection(db, 'notifications'),
-        where('recipientUid', '==', uid),
-        orderBy('createdAt', 'desc'),
-        limit(20)
-    );
-    return onSnapshot(q, snap => {
-        callback(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
+    const tick = () => {
+        const notifs = (getLocal('unitex_notifications') || []).filter((n:any) => n.recipientUid === uid);
+        callback(notifs);
+    };
+    tick();
+    const id = setInterval(tick, 800);
+    return () => clearInterval(id);
 }
 
 export async function markNotificationAsRead(notifId: string) {
-    await updateDoc(doc(db, 'notifications', notifId), { read: true });
+    const notifs = getLocal('unitex_notifications') || [];
+    const n = notifs.find((x:any) => x.id === notifId);
+    if (n) n.read = true;
+    setLocal('unitex_notifications', notifs);
 }
 
 export async function markAllNotificationsAsRead(uid: string) {
-    const q = query(collection(db, 'notifications'), where('recipientUid', '==', uid), where('read', '==', false));
-    const snap = await getDocs(q);
-    const batch = writeBatch(db);
-    snap.docs.forEach(d => batch.update(d.ref, { read: true }));
-    await batch.commit();
+    const notifs = getLocal('unitex_notifications') || [];
+    notifs.forEach((n:any) => { if (n.recipientUid === uid) n.read = true; });
+    setLocal('unitex_notifications', notifs);
 }
 
 export async function createNotification(data: {
@@ -369,183 +321,228 @@ export async function createNotification(data: {
     content: string;
     actionUrl?: string;
 }) {
-    await addDoc(collection(db, 'notifications'), {
-        ...data,
-        read: false,
-        createdAt: serverTimestamp()
-    });
+    const notifs = getLocal('unitex_notifications') || [];
+    notifs.unshift({ id: 'n-' + Date.now(), ...data, read: false, createdAt: nowISO() });
+    setLocal('unitex_notifications', notifs);
 }
 
 // ─── VAULT ────────────────────────────────────────────────────────────────────
 
 export async function getVaultItems(uid: string) {
-    const snap = await getDocs(
-        query(collection(db, 'vault'), where('uid', '==', uid), orderBy('createdAt', 'desc'))
-    );
-    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const items = getLocal('unitex_vault') || [];
+    return items.filter((i:any) => i.uid === uid);
 }
 
 export async function addVaultItem(uid: string, data: DocumentData) {
-    return addDoc(collection(db, 'vault'), { uid, ...data, createdAt: serverTimestamp() });
+    const items = getLocal('unitex_vault') || [];
+    const it = { id: 'v-' + Date.now(), uid, ...data, createdAt: nowISO() };
+    items.unshift(it);
+    setLocal('unitex_vault', items);
+    return it;
 }
 
 export async function deleteVaultItem(itemId: string) {
-    await deleteDoc(doc(db, 'vault', itemId));
+    let items = getLocal('unitex_vault') || [];
+    items = items.filter((i:any) => i.id !== itemId);
+    setLocal('unitex_vault', items);
 }
 
 // ─── EVENTS ───────────────────────────────────────────────────────────────────
 
 export async function getEvents() {
-    const snap = await getDocs(query(collection(db, 'events'), orderBy('date', 'asc'), limit(20)));
-    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    return getLocal('unitex_events') || [];
 }
 
 export async function rsvpEvent(eventId: string, uid: string) {
-    await setDoc(doc(db, 'events', eventId, 'rsvps', uid), { rsvpAt: serverTimestamp() });
-    await updateDoc(doc(db, 'events', eventId), { attendees: increment(1) });
+    const events = getLocal('unitex_events') || [];
+    const ev = events.find((e:any) => e.id === eventId);
+    if (!ev) return;
+    ev.attendees = (ev.attendees || 0) + 1;
+    setLocal('unitex_events', events);
 }
 
 export async function createEvent(data: any) {
-    return addDoc(collection(db, 'events'), { ...data, createdAt: serverTimestamp(), attendees: 0 });
+    const events = getLocal('unitex_events') || [];
+    const ev = { id: 'evt-' + Date.now(), ...data, createdAt: nowISO(), attendees: 0 };
+    events.push(ev);
+    setLocal('unitex_events', events);
+    return ev;
 }
 
 export function subscribeToEvents(callback: (events: DocumentData[]) => void): Unsubscribe {
-    const q = query(collection(db, 'events'), orderBy('date', 'asc'));
-    return onSnapshot(q, snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+    const tick = async () => {
+        try {
+            const res = await fetch('/api/events');
+            if (res.ok) { const data = await res.json(); callback(data); return; }
+        } catch(e) {}
+        const events = (getLocal('unitex_events') || []).sort((a:any, b:any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        callback(events);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
 }
 
 // ─── RESOURCES & COURSES ──────────────────────────────────────────────────────
 
 export function subscribeToCourses(callback: (courses: DocumentData[]) => void): Unsubscribe {
-    const q = query(collection(db, 'courses'), orderBy('title', 'asc'));
-    return onSnapshot(q, snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+    const tick = () => {
+        const courses = getLocal('unitex_courses') || [];
+        callback(courses);
+    };
+    tick();
+    const id = setInterval(tick, 800);
+    return () => clearInterval(id);
 }
 
 export function subscribeToResources(callback: (resources: DocumentData[]) => void): Unsubscribe {
-    const q = query(collection(db, 'resources'), orderBy('title', 'asc'));
-    return onSnapshot(q, snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+    const tick = () => {
+        const resources = getLocal('unitex_resources') || [];
+        callback(resources);
+    };
+    tick();
+    const id = setInterval(tick, 800);
+    return () => clearInterval(id);
 }
 
 export async function enrollCourse(courseId: string, uid: string) {
-    await setDoc(doc(db, 'users', uid, 'enrolled_courses', courseId), { enrolledAt: serverTimestamp(), progress: 0 });
-    await updateDoc(doc(db, 'courses', courseId), { students: increment(1) });
+    const users = getLocal('unitex_users') || {};
+    users[uid] = users[uid] || {};
+    users[uid].enrolled_courses = users[uid].enrolled_courses || {};
+    users[uid].enrolled_courses[courseId] = { enrolledAt: nowISO(), progress: 0 };
+    setLocal('unitex_users', users);
 }
 
 export function subscribeToEnrolledCourses(uid: string, callback: (courses: DocumentData[]) => void): Unsubscribe {
-    const q = query(collection(db, 'users', uid, 'enrolled_courses'), orderBy('enrolledAt', 'desc'));
-    return onSnapshot(q, snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+    const tick = () => {
+        const users = getLocal('unitex_users') || {};
+        const enrolled = users[uid]?.enrolled_courses ? Object.keys(users[uid].enrolled_courses).map(id => ({ id, ...users[uid].enrolled_courses[id] })) : [];
+        callback(enrolled);
+    };
+    tick();
+    const id = setInterval(tick, 800);
+    return () => clearInterval(id);
 }
 
 export async function toggleResourceSave(resourceId: string, uid: string, isSaved: boolean) {
-    const ref = doc(db, 'users', uid, 'saved_resources', resourceId);
-    if (isSaved) {
-        await deleteDoc(ref);
-    } else {
-        await setDoc(ref, { savedAt: serverTimestamp() });
-    }
+    const users = getLocal('unitex_users') || {};
+    users[uid] = users[uid] || {};
+    users[uid].saved_resources = users[uid].saved_resources || {};
+    if (isSaved) delete users[uid].saved_resources[resourceId]; else users[uid].saved_resources[resourceId] = { savedAt: nowISO() };
+    setLocal('unitex_users', users);
 }
 
 export function subscribeToSavedResources(uid: string, callback: (savedIds: Set<string>) => void): Unsubscribe {
-    const q = query(collection(db, 'users', uid, 'saved_resources'));
-    return onSnapshot(q, snap => {
-        const savedIds = new Set(snap.docs.map(d => d.id));
-        callback(savedIds);
-    });
+    const tick = () => {
+        const users = getLocal('unitex_users') || {};
+        const saved = new Set(Object.keys(users[uid]?.saved_resources || {}));
+        callback(saved);
+    };
+    tick();
+    const id = setInterval(tick, 800);
+    return () => clearInterval(id);
 }
 
 // ─── NETWORK & CONNECTIONS ────────────────────────────────────────────────────
 
 export async function getTrendingUsers(limitCount: number = 20) {
-    const snap = await getDocs(query(collection(db, 'users'), orderBy('connectionsCount', 'desc'), limit(limitCount)));
-    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const users = getLocal('unitex_users') || {};
+    const arr = Object.keys(users).map(k => ({ id: k, ...users[k] }));
+    arr.sort((a:any,b:any) => (b.connectionsCount || 0) - (a.connectionsCount || 0));
+    return arr.slice(0, limitCount);
 }
 
 export async function getUsers(uids: string[]) {
     if (!uids || uids.length === 0) return [];
-    // Firestore 'in' query supports up to 10 at a time, but for simplicity we can Promise.all
-    const promises = uids.map(uid => getDoc(doc(db, 'users', uid)));
-    const snaps = await Promise.all(promises);
-    return snaps.filter(s => s.exists()).map(s => ({ id: s.id, ...s.data() }));
+    const users = getLocal('unitex_users') || {};
+    return uids.map(uid => users[uid]).filter(Boolean);
 }
 
 export async function sendConnectionRequest(fromUid: string, fromName: string, toUid: string) {
-    const reqRef = await addDoc(collection(db, 'network_requests'), {
-        fromUid,
-        fromName,
-        toUid,
-        status: 'pending',
-        createdAt: serverTimestamp()
-    });
-
-    await addDoc(collection(db, 'notifications'), {
-        recipientUid: toUid,
-        senderUid: fromUid,
-        type: 'connection_request',
-        content: `${fromName} wants to connect with you.`,
-        actionUrl: '/networking',
-        requestId: reqRef.id,
-        read: false,
-        createdAt: serverTimestamp()
-    });
+    const reqs = getLocal('unitex_network_requests') || [];
+    const id = 'nr-' + Date.now();
+    const req = { id, fromUid, fromName, toUid, status: 'pending', createdAt: nowISO() };
+    reqs.unshift(req);
+    setLocal('unitex_network_requests', reqs);
+    // create notification
+    const notifs = getLocal('unitex_notifications') || [];
+    notifs.unshift({ id: 'n-' + Date.now(), recipientUid: toUid, senderUid: fromUid, type: 'connection_request', content: `${fromName} wants to connect with you.`, actionUrl: '/networking', requestId: id, read: false, createdAt: nowISO() });
+    setLocal('unitex_notifications', notifs);
 }
 
 export async function acceptConnectionRequest(requestId: string, fromUid: string, toUid: string, toName: string) {
-    await updateDoc(doc(db, 'network_requests', requestId), { status: 'accepted', updatedAt: serverTimestamp() });
-    
-    await setDoc(doc(db, 'users', fromUid, 'connections', toUid), { connectedAt: serverTimestamp() });
-    await setDoc(doc(db, 'users', toUid, 'connections', fromUid), { connectedAt: serverTimestamp() });
-    
-    await updateDoc(doc(db, 'users', fromUid), { connectionsCount: increment(1) });
-    await updateDoc(doc(db, 'users', toUid), { connectionsCount: increment(1) });
+    const reqs = getLocal('unitex_network_requests') || [];
+    const req = reqs.find((r:any) => r.id === requestId);
+    if (req) req.status = 'accepted';
+    setLocal('unitex_network_requests', reqs);
+    const users = getLocal('unitex_users') || {};
+    users[fromUid] = users[fromUid] || {};
+    users[toUid] = users[toUid] || {};
+    users[fromUid].connections = users[fromUid].connections || {};
+    users[toUid].connections = users[toUid].connections || {};
+    users[fromUid].connections[toUid] = { connectedAt: nowISO() };
+    users[toUid].connections[fromUid] = { connectedAt: nowISO() };
+    users[fromUid].connectionsCount = (users[fromUid].connectionsCount || 0) + 1;
+    users[toUid].connectionsCount = (users[toUid].connectionsCount || 0) + 1;
+    setLocal('unitex_users', users);
 
-    // Try creating a direct message thread for the two users
-    try {
-        const fromUser = await getDoc(doc(db, 'users', fromUid));
-        const toUser = await getDoc(doc(db, 'users', toUid));
-        if (fromUser.exists() && toUser.exists()) {
-            await createConversation([fromUid, toUid], {
-                [fromUid]: { name: fromUser.data().displayName || 'User', initials: (fromUser.data().displayName || 'U').substring(0, 2).toUpperCase() },
-                [toUid]: { name: toUser.data().displayName || toName || 'User', initials: (toUser.data().displayName || toName || 'U').substring(0, 2).toUpperCase() }
-            });
-        }
-    } catch(err) { console.error('Failed creating chat automatically', err); }
-
-    await addDoc(collection(db, 'notifications'), {
-        recipientUid: fromUid,
-        senderUid: toUid,
-        type: 'connection_accepted',
-        content: `${toName} accepted your connection request.`,
-        actionUrl: `/profile/${toUid}`,
-        read: false,
-        createdAt: serverTimestamp()
-    });
+    const notifs = getLocal('unitex_notifications') || [];
+    notifs.unshift({ id: 'n-' + Date.now(), recipientUid: fromUid, senderUid: toUid, type: 'connection_accepted', content: `${toName} accepted your connection request.`, actionUrl: `/profile/${toUid}`, read: false, createdAt: nowISO() });
+    setLocal('unitex_notifications', notifs);
 }
 
 export async function rejectConnectionRequest(requestId: string) {
-    await updateDoc(doc(db, 'network_requests', requestId), { status: 'rejected', updatedAt: serverTimestamp() });
+    const reqs = getLocal('unitex_network_requests') || [];
+    const req = reqs.find((r:any) => r.id === requestId);
+    if (req) req.status = 'rejected';
+    setLocal('unitex_network_requests', reqs);
 }
 
 export function subscribeToPendingRequests(uid: string, callback: (reqs: any[]) => void): Unsubscribe {
-    const q = query(
-        collection(db, 'network_requests'),
-        where('toUid', '==', uid),
-        where('status', '==', 'pending'),
-        orderBy('createdAt', 'desc')
-    );
-    return onSnapshot(q, snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+    const tick = () => {
+        const reqs = (getLocal('unitex_network_requests') || []).filter((r:any) => r.toUid === uid && r.status === 'pending');
+        callback(reqs);
+    };
+    tick();
+    const id = setInterval(tick, 3000);
+    return () => clearInterval(id);
 }
 
 export function subscribeToConnections(uid: string, callback: (connections: any[]) => void): Unsubscribe {
-    const q = query(collection(db, 'users', uid, 'connections'), orderBy('connectedAt', 'desc'));
-    return onSnapshot(q, snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+    const tick = () => {
+        const users = getLocal('unitex_users') || {};
+        const conns = users[uid]?.connections ? Object.keys(users[uid].connections).map(k => ({ id: k, ...users[uid].connections[k] })) : [];
+        callback(conns);
+    };
+    tick();
+    const id = setInterval(tick, 800);
+    return () => clearInterval(id);
 }
 
 export function subscribeToDiscoverFeed(callback: (feed: any[]) => void): Unsubscribe {
-    const q = query(collection(db, 'discover_feed'), orderBy('createdAt', 'desc'), limit(20));
-    return onSnapshot(q, snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+    const tick = async () => {
+        try {
+            const res = await fetch('/api/discover');
+            if (res.ok) { const data = await res.json(); callback(data); return; }
+        } catch(e) {}
+        const feed = getLocal('unitex_discover') || [];
+        callback(feed);
+    };
+    tick();
+    const id = setInterval(tick, 800);
+    return () => clearInterval(id);
 }
 
 export function subscribeToTrendingTopics(callback: (topics: any[]) => void): Unsubscribe {
-    const q = query(collection(db, 'trending_topics'), orderBy('score', 'desc'), limit(15));
-    return onSnapshot(q, snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+    const tick = async () => {
+        try {
+            const res = await fetch('/api/trending');
+            if (res.ok) { const data = await res.json(); callback(data); return; }
+        } catch(e) {}
+        const topics = getLocal('unitex_trending') || [];
+        callback(topics);
+    };
+    tick();
+    const id = setInterval(tick, 1500);
+    return () => clearInterval(id);
 }

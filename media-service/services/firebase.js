@@ -1,77 +1,41 @@
-/**
- * Firebase Admin Service
- * ─────────────────────────────────────────────
- * Initializes firebase-admin and exposes helpers
- * for writing media metadata to Firestore.
- */
+// Local file-based replacement for Firebase Admin used in media-service for MVP
+import fs from 'fs';
+import path from 'path';
 
-import admin from 'firebase-admin';
-import { createRequire } from 'module';
+const DATA_DIR = path.join(process.cwd(), 'data');
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
-let db = null;
+const MEDIA_PATH = path.join(DATA_DIR, 'media.json');
 
-/**
- * Initialize Firebase Admin SDK.
- * Uses GOOGLE_APPLICATION_CREDENTIALS env variable
- * pointing to a service account JSON file.
- */
 export function initFirebase() {
-    if (admin.apps.length > 0) return;
-
-    admin.initializeApp({
-        credential: admin.credential.applicationDefault(),
-        projectId: process.env.FIREBASE_PROJECT_ID,
-    });
-
-    db = admin.firestore();
-    console.log('[Firebase] Admin initialized, project:', process.env.FIREBASE_PROJECT_ID);
+  // no-op for local storage
+  return;
 }
 
-/**
- * Save media upload metadata to Firestore.
- * Collection: media/{docId}
- * Also appended to users/{uid}/media subcollection.
- *
- * @param {object} data
- * @returns {string} Firestore document ID
- */
+function readMedia() {
+  if (!fs.existsSync(MEDIA_PATH)) return {};
+  try { return JSON.parse(fs.readFileSync(MEDIA_PATH, 'utf8')); } catch (e) { return {}; }
+}
+
+function writeMedia(obj) { fs.writeFileSync(MEDIA_PATH, JSON.stringify(obj, null, 2)); }
+
 export async function saveMediaMetadata(data) {
-    if (!db) throw new Error('Firebase not initialized');
-
-    const { uid, usercode, filename, mediaURL, fileHash, fileSizeBytes, mimeType, isVideo, createdAt } = data;
-
-    const payload = {
-        uid,
-        usercode,          // ← The primary identity reference (4-char alphanumeric)
-        filename,
-        mediaURL,
-        fileHash,          // SHA-256 — used for blockchain proof + duplicate detection
-        fileSizeBytes,
-        mimeType,
-        isVideo,
-        createdAt,
-        blockchainProof: null, // Updated after tx is confirmed
-    };
-
-    // Write to global media collection
-    const ref = await db.collection('media').add(payload);
-
-    // Also index under the user's own subcollection for fast lookups
-    await db.collection('users').doc(uid).collection('media').doc(ref.id).set({
-        filename,
-        mediaURL,
-        fileHash,
-        createdAt,
-    });
-
-    console.log(`[Firebase] Media metadata saved: ${ref.id} for user ${usercode}`);
-    return ref.id;
+  const store = readMedia();
+  const id = 'm-' + Date.now();
+  store[id] = {
+    id,
+    ...data,
+    blockchainProof: null
+  };
+  writeMedia(store);
+  console.log(`[LocalMedia] Saved media metadata: ${id}`);
+  return id;
 }
 
-/**
- * Update the blockchainProof field once the TX hash is known.
- */
 export async function updateBlockchainProof(docId, txHash) {
-    if (!db) return;
-    await db.collection('media').doc(docId).update({ blockchainProof: txHash });
+  const store = readMedia();
+  if (!store[docId]) return;
+  store[docId].blockchainProof = txHash;
+  writeMedia(store);
+  console.log(`[LocalMedia] Updated blockchainProof for ${docId}`);
 }

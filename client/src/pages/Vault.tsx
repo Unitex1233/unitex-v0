@@ -20,8 +20,7 @@ import {
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
-import { ref, onValue, set } from 'firebase/database';
-import { rtdb } from '@/lib/firebase';
+// Use localStorage / server-backed user data for MVP
 
 interface VaultItem {
     id: string;
@@ -132,14 +131,25 @@ function Vault() {
 
     useEffect(() => {
         if (!currentUser?.uid) return;
-        
-        const userRef = ref(rtdb, `users/${currentUser.uid}/vp`);
-        const unsubscribe = onValue(userRef, (snapshot) => {
-            const data = snapshot.val();
-            setVp(data || 0);
-        });
-        
-        return () => unsubscribe();
+        const fetchVp = async () => {
+            try {
+                const res = await fetch(`/api/users/${currentUser.uid}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setVp((data?.vp) || 0);
+                    return;
+                }
+            } catch (e) {
+                // ignore
+            }
+            const raw = localStorage.getItem('unitex_users');
+            const users = raw ? JSON.parse(raw) : {};
+            const u = users[currentUser.uid];
+            setVp((u && u.vp) || 0);
+        };
+        fetchVp();
+        const id = setInterval(fetchVp, 5000);
+        return () => clearInterval(id);
     }, [currentUser]);
     const [activeTab, setActiveTab] = useState<'store' | 'instructions'>('store');
     const [activeCategory, setActiveCategory] = useState<'All' | VaultItem['category']>('All');

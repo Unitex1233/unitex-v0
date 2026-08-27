@@ -105,6 +105,182 @@ app.post('/api/points/award', async (req, res) => {
     }
 });
 
+const fs = require('fs');
+const path = require('path');
+
+// Local discovery feed endpoint (reads fallback or feed file)
+app.get('/api/discover', (req, res) => {
+    try {
+        const dataDir = path.join(__dirname, '../../data');
+        const feedPath = path.join(dataDir, 'discover_feed.json');
+        const fallbackPath = path.join(dataDir, 'discover_fallback.json');
+        let payload = [];
+        if (fs.existsSync(feedPath)) payload = JSON.parse(fs.readFileSync(feedPath, 'utf8'));
+        else if (fs.existsSync(fallbackPath)) payload = JSON.parse(fs.readFileSync(fallbackPath, 'utf8'));
+        return res.json(payload);
+    } catch (e) {
+        console.error('Error reading discover feed:', e.message);
+        return res.status(500).json({ error: 'Failed to read discover feed' });
+    }
+});
+
+// Media metadata endpoint (simple file-backed store)
+app.post('/api/media', (req, res) => {
+    try {
+        const dataDir = path.join(__dirname, '../../data');
+        if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+        const mediaPath = path.join(dataDir, 'media.json');
+        let store = {};
+        if (fs.existsSync(mediaPath)) {
+            try { store = JSON.parse(fs.readFileSync(mediaPath, 'utf8')); } catch (e) { store = {}; }
+        }
+        const id = 'm-' + Date.now();
+        store[id] = { id, ...req.body };
+        fs.writeFileSync(mediaPath, JSON.stringify(store, null, 2));
+        return res.json({ success: true, id });
+    } catch (e) {
+        console.error('Failed to save media metadata:', e.message);
+        return res.status(500).json({ error: 'Failed to save media metadata' });
+    }
+});
+
+// Users endpoints (file-backed)
+app.get('/api/users/:uid', (req, res) => {
+    try {
+        const dataDir = path.join(__dirname, '../../data');
+        const usersPath = path.join(dataDir, 'users.json');
+        if (!fs.existsSync(usersPath)) return res.status(404).json({ error: 'User not found' });
+        const users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
+        const u = users[req.params.uid];
+        if (!u) return res.status(404).json({ error: 'User not found' });
+        return res.json(u);
+    } catch (e) {
+        console.error('Failed to read user:', e.message);
+        return res.status(500).json({ error: 'Failed to read user' });
+    }
+});
+
+app.post('/api/users', (req, res) => {
+    try {
+        const dataDir = path.join(__dirname, '../../data');
+        if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+        const usersPath = path.join(dataDir, 'users.json');
+        let users = {};
+        if (fs.existsSync(usersPath)) {
+            try { users = JSON.parse(fs.readFileSync(usersPath, 'utf8')); } catch (e) { users = {}; }
+        }
+        const payload = req.body;
+        const uid = payload.uid || ('u-' + Date.now());
+        users[uid] = { ...users[uid], ...payload, uid };
+        fs.writeFileSync(usersPath, JSON.stringify(users, null, 2));
+        return res.json({ success: true, uid });
+    } catch (e) {
+        console.error('Failed to save user:', e.message);
+        return res.status(500).json({ error: 'Failed to save user' });
+    }
+});
+
+// Simple search endpoint across local data files
+app.get('/api/search', (req, res) => {
+    try {
+        const term = (req.query.term || '').toString().toLowerCase().trim();
+        const dataDir = path.join(__dirname, '../../data');
+        const results = [];
+
+        // Users
+        const usersPath = path.join(dataDir, 'users.json');
+        if (fs.existsSync(usersPath)) {
+            const users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
+            Object.values(users).forEach((u) => {
+                const text = ((u.displayName||'') + ' ' + (u.username||'') + ' ' + (u.usercode||'')).toLowerCase();
+                if (!term || text.includes(term)) results.push({ id: u.uid, type: 'user', ...u });
+            });
+        }
+
+        // Discover feed
+        const feedPath = path.join(dataDir, 'discover_feed.json');
+        if (fs.existsSync(feedPath)) {
+            const feed = JSON.parse(fs.readFileSync(feedPath, 'utf8'));
+            feed.forEach((item) => {
+                const text = ((item.title||'') + ' ' + (item.description||'')).toLowerCase();
+                if (!term || text.includes(term)) results.push({ id: item.title, type: 'post', ...item });
+            });
+        }
+
+        // Trending topics
+        const topicsPath = path.join(dataDir, 'trending_topics.json');
+        if (fs.existsSync(topicsPath)) {
+            const topics = JSON.parse(fs.readFileSync(topicsPath, 'utf8'));
+            topics.forEach((t) => {
+                const text = ((t.title||'') + ' ' + (t.summary||'')).toLowerCase();
+                if (!term || text.includes(term)) results.push({ id: t.title, type: 'topic', ...t });
+            });
+        }
+
+        return res.json(results.slice(0, 200));
+    } catch (e) {
+        console.error('Search failed:', e.message);
+        return res.status(500).json({ error: 'Search failed' });
+    }
+});
+
+// Events endpoints (file-backed)
+app.get('/api/events', (req, res) => {
+    try {
+        const dataDir = path.join(__dirname, '../../data');
+        const eventsPath = path.join(dataDir, 'events.json');
+        let payload = [];
+        if (fs.existsSync(eventsPath)) {
+            const events = JSON.parse(fs.readFileSync(eventsPath, 'utf8'));
+            payload = Array.isArray(events) ? events : Object.values(events);
+        }
+        return res.json(payload);
+    } catch (e) {
+        console.error('Error reading events:', e.message);
+        return res.status(500).json({ error: 'Failed to read events' });
+    }
+});
+
+app.post('/api/events', (req, res) => {
+    try {
+        const dataDir = path.join(__dirname, '../../data');
+        if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+        const eventsPath = path.join(dataDir, 'events.json');
+        let events = [];
+        if (fs.existsSync(eventsPath)) {
+            try {
+                const data = JSON.parse(fs.readFileSync(eventsPath, 'utf8'));
+                events = Array.isArray(data) ? data : Object.values(data);
+            } catch (e) { events = []; }
+        }
+        const eventId = 'evt-' + Date.now();
+        const newEvent = { id: eventId, ...req.body, createdAt: new Date().toISOString(), attendees: 0 };
+        events.push(newEvent);
+        fs.writeFileSync(eventsPath, JSON.stringify(events, null, 2));
+        return res.json({ success: true, id: eventId, event: newEvent });
+    } catch (e) {
+        console.error('Failed to create event:', e.message);
+        return res.status(500).json({ error: 'Failed to create event' });
+    }
+});
+
+// Trending topics endpoint (file-backed)
+app.get('/api/trending', (req, res) => {
+    try {
+        const dataDir = path.join(__dirname, '../../data');
+        const topicsPath = path.join(dataDir, 'trending_topics.json');
+        let payload = [];
+        if (fs.existsSync(topicsPath)) {
+            const topics = JSON.parse(fs.readFileSync(topicsPath, 'utf8'));
+            payload = Array.isArray(topics) ? topics : Object.values(topics);
+        }
+        return res.json(payload);
+    } catch (e) {
+        console.error('Error reading trending topics:', e.message);
+        return res.status(500).json({ error: 'Failed to read trending topics' });
+    }
+});
+
 // Basic error handling
 app.use((err, req, res, next) => {
     console.error(err.stack);

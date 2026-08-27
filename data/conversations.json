@@ -1,0 +1,46 @@
+[
+  {
+    "id": "conv-1",
+    "participants": ["u-1", "u-2"],
+    "details": {
+      "u-1": { "name": "Alex Kumar", "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=256&h=256&auto=format&fit=crop" },
+      "u-2": { "name": "Sarah Chen", "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=256&h=256&auto=format&fit=crop" }
+    },
+    "lastMessage": "Sounds perfect! Let's schedule a call next week.",
+    "lastMessageAt": "2026-08-26T12:30:00Z",
+    "createdAt": "2026-08-20T10:00:00Z"
+  },
+  {
+    "id": "conv-2",
+    "participants": ["u-1", "u-3"],
+    "details": {
+      "u-1": { "name": "Alex Kumar", "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=256&h=256&auto=format&fit=crop" },
+      "u-3": { "name": "Marcus Trading", "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=256&h=256&auto=format&fit=crop" }
+    },
+    "lastMessage": "The DeFi ecosystem is moving fast. We need to keep up.",
+    "lastMessageAt": "2026-08-26T10:15:00Z",
+    "createdAt": "2026-08-15T14:30:00Z"
+  },
+  {
+    "id": "conv-3",
+    "participants": ["u-4", "u-7"],
+    "details": {
+      "u-4": { "name": "Emma Rodriguez", "avatar": "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=256&h=256&auto=format&fit=crop" },
+      "u-7": { "name": "David Lee", "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=256&h=256&auto=format&fit=crop" }
+    },
+    "lastMessage": "Would love to see your implementation. Great ideas!",
+    "lastMessageAt": "2026-08-25T16:45:00Z",
+    "createdAt": "2026-08-18T09:00:00Z"
+  },
+  {
+    "id": "conv-4",
+    "participants": ["u-5", "u-6"],
+    "details": {
+      "u-5": { "name": "James Wilson", "avatar": "https://images.unsplash.com/photo-1539571696357-5a69c006ae8f?q=80&w=256&h=256&auto=format&fit=crop" },
+      "u-6": { "name": "Lisa Park", "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=256&h=256&auto=format&fit=crop" }
+    },
+    "lastMessage": "The campaign metrics look amazing. Let's scale up.",
+    "lastMessageAt": "2026-08-24T14:20:00Z",
+    "createdAt": "2026-08-12T11:30:00Z"
+  }
+]

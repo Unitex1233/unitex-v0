@@ -1,0 +1,62 @@
+[
+  {
+    "id": "res-1",
+    "title": "Getting Started with Solidity",
+    "description": "Comprehensive guide to Solidity programming language for smart contracts",
+    "category": "Tutorial",
+    "type": "article",
+    "url": "https://docs.soliditylang.org",
+    "image": "https://images.unsplash.com/photo-1633356122544-f134324ef6db?q=80&w=400&auto=format&fit=crop",
+    "author": "Ethereum Docs",
+    "saves": 234,
+    "createdAt": "2026-01-15T08:00:00Z"
+  },
+  {
+    "id": "res-2",
+    "title": "React Performance Optimization Patterns",
+    "description": "Best practices for optimizing React applications for production",
+    "category": "Guide",
+    "type": "article",
+    "url": "https://react.dev/reference/react",
+    "image": "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=400&auto=format&fit=crop",
+    "author": "React Team",
+    "saves": 456,
+    "createdAt": "2026-02-10T09:30:00Z"
+  },
+  {
+    "id": "res-3",
+    "title": "The Art of Technical Architecture",
+    "description": "Design patterns and principles for building scalable systems",
+    "category": "Design Patterns",
+    "type": "book",
+    "url": "https://example.com/architecture-book",
+    "image": "https://images.unsplash.com/photo-1516321378713-f3400ca199e7?q=80&w=400&auto=format&fit=crop",
+    "author": "System Design Experts",
+    "saves": 189,
+    "createdAt": "2026-03-05T10:15:00Z"
+  },
+  {
+    "id": "res-4",
+    "title": "Crypto Fundamentals: Understanding Blockchain",
+    "description": "A beginner's guide to blockchain technology and cryptocurrencies",
+    "category": "Learning",
+    "type": "video",
+    "url": "https://youtube.com/blockchain-course",
+    "image": "https://images.unsplash.com/photo-1518186285034-76d393e4bd95?q=80&w=400&auto=format&fit=crop",
+    "author": "Blockchain Institute",
+    "saves": 567,
+    "createdAt": "2026-01-20T14:45:00Z"
+  },
+  {
+    "id": "res-5",
+    "title": "Building Distributed Systems at Scale",
+    "description": "Deep dive into microservices, distributed databases, and coordination",
+    "category": "Advanced",
+    "type": "course",
+    "url": "https://coursera.org/distributed-systems",
+    "image": "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=400&auto=format&fit=crop",
+    "author": "Stanford Online",
+    "saves": 234,
+    "createdAt": "2026-02-28T11:00:00Z"
+  }
+]
