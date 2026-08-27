@@ -145,6 +145,23 @@ app.post('/api/media', (req, res) => {
 });
 
 // Users endpoints (file-backed)
+// Get all users
+app.get('/api/users', (req, res) => {
+    try {
+        const dataDir = path.join(__dirname, '../../data');
+        const usersPath = path.join(dataDir, 'users.json');
+        if (!fs.existsSync(usersPath)) return res.json({});
+        const users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
+        // Return as array if it's an object
+        const usersArray = Array.isArray(users) ? users : Object.values(users);
+        return res.json(usersArray);
+    } catch (e) {
+        console.error('Failed to read users:', e.message);
+        return res.status(500).json({ error: 'Failed to read users' });
+    }
+});
+
+// Get single user by UID
 app.get('/api/users/:uid', (req, res) => {
     try {
         const dataDir = path.join(__dirname, '../../data');
